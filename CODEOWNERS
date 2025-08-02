@@ -1,0 +1,53 @@
+# CODEOWNERS file for Spin-Glass-Anneal-RL
+# This file defines individuals or teams that are responsible for code in the repository.
+
+# Global ownership - these users/teams are requested for all changes
+* @terragonlabs/core-team
+
+# Documentation
+*.md @terragonlabs/docs-team
+docs/ @terragonlabs/docs-team
+README.md @terragonlabs/core-team @terragonlabs/docs-team
+
+# Core library code
+spin_glass_rl/ @terragonlabs/core-team @terragonlabs/ml-engineers
+
+# CUDA and GPU code
+*.cu @terragonlabs/gpu-specialists
+*.cuh @terragonlabs/gpu-specialists
+spin_glass_rl/cuda/ @terragonlabs/gpu-specialists
+
+# Configuration and infrastructure
+.github/ @terragonlabs/devops-team
+docker/ @terragonlabs/devops-team
+Dockerfile @terragonlabs/devops-team
+docker-compose.yml @terragonlabs/devops-team
+.devcontainer/ @terragonlabs/devops-team
+
+# CI/CD and workflows
+.github/workflows/ @terragonlabs/devops-team @terragonlabs/core-team
+
+# Security related files
+SECURITY.md @terragonlabs/security-team
+.github/workflows/security-scan.yml @terragonlabs/security-team @terragonlabs/devops-team
+
+# Testing
+tests/ @terragonlabs/qa-team @terragonlabs/core-team
+conftest.py @terragonlabs/qa-team
+
+# Package configuration
+pyproject.toml @terragonlabs/core-team @terragonlabs/devops-team
+setup.py @terragonlabs/core-team
+requirements*.txt @terragonlabs/core-team
+
+# Build and release
+Makefile @terragonlabs/devops-team
+.release-it.json @terragonlabs/devops-team @terragonlabs/core-team
+
+# Examples and benchmarks
+examples/ @terragonlabs/ml-engineers @terragonlabs/core-team
+benchmarks/ @terragonlabs/performance-team @terragonlabs/ml-engineers
+
+# Legal and compliance
+LICENSE @terragonlabs/legal-team @terragonlabs/core-team
+CHANGELOG.md @terragonlabs/core-team
