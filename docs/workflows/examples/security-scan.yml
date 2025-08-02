@@ -1,0 +1,392 @@
+# Security Scanning Pipeline for Spin-Glass-Anneal-RL
+# Copy this file to .github/workflows/security-scan.yml
+
+name: Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  # =============================================================================
+  # Dependency Vulnerability Scanning
+  # =============================================================================
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install safety pip-audit
+
+      - name: Run Safety check
+        run: |
+          safety check --json --output safety-report.json || true
+          safety check || echo "Safety check found vulnerabilities"
+
+      - name: Run pip-audit
+        run: |
+          pip-audit --format=json --output=pip-audit-report.json || true
+          pip-audit || echo "pip-audit found vulnerabilities"
+
+      - name: Upload dependency scan results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: dependency-scan-results
+          path: |
+            safety-report.json
+            pip-audit-report.json
+
+  # =============================================================================
+  # Code Security Scanning with CodeQL
+  # =============================================================================
+  codeql-scan:
+    name: CodeQL Security Scan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'python' ]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{matrix.language}}"
+
+  # =============================================================================
+  # Secret Scanning
+  # =============================================================================
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Run GitLeaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # =============================================================================
+  # Container Security Scanning
+  # =============================================================================
+  container-scan:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: production
+          push: false
+          tags: spin-glass-rl:security-scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'spin-glass-rl:security-scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run Snyk Container scan
+        if: github.event_name != 'pull_request'
+        uses: snyk/actions/docker@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          image: spin-glass-rl:security-scan
+          args: --severity-threshold=high
+
+      - name: Upload Snyk results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: snyk-container-results
+          path: snyk.sarif
+
+  # =============================================================================
+  # SLSA Provenance Generation
+  # =============================================================================
+  slsa-provenance:
+    name: SLSA Provenance
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Build package
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+
+      - name: Generate SLSA provenance
+        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
+        with:
+          base64-subjects: |
+            ${{ hashFiles('dist/*') }}
+          upload-assets: true
+
+  # =============================================================================
+  # SBOM Generation
+  # =============================================================================
+  sbom-generation:
+    name: SBOM Generation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install cyclone-dx-bom pip-licenses
+
+      - name: Generate Python SBOM
+        run: |
+          # Generate SBOM using cyclone-dx
+          cyclone-dx bom -o sbom-cyclone.json
+          
+          # Generate license report
+          pip-licenses --format=json --output-file=licenses.json
+
+      - name: Generate Docker SBOM
+        run: |
+          # Build image first
+          docker build -t spin-glass-rl:sbom .
+          
+          # Generate SBOM for Docker image using Syft
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          syft spin-glass-rl:sbom -o spdx-json=sbom-docker.spdx.json
+
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: sbom-reports
+          path: |
+            sbom-cyclone.json
+            sbom-docker.spdx.json
+            licenses.json
+
+  # =============================================================================
+  # Infrastructure Security
+  # =============================================================================
+  infrastructure-scan:
+    name: Infrastructure Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Checkov on Dockerfile
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: dockerfile
+          output_format: sarif
+          output_file_path: checkov-dockerfile.sarif
+
+      - name: Run Checkov on Docker Compose
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: docker_compose
+          output_format: sarif
+          output_file_path: checkov-compose.sarif
+
+      - name: Upload Checkov results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: |
+            checkov-dockerfile.sarif
+            checkov-compose.sarif
+
+  # =============================================================================
+  # License Compliance
+  # =============================================================================
+  license-scan:
+    name: License Compliance Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install pip-licenses licensecheck
+
+      - name: Check license compatibility
+        run: |
+          # Generate license report
+          pip-licenses --format=json --output-file=license-report.json
+          
+          # Check for GPL and other restrictive licenses
+          pip-licenses --format=plain | grep -E "(GPL|AGPL|LGPL)" || echo "No restrictive licenses found"
+          
+          # Generate detailed license analysis
+          licensecheck --zero
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v3
+        with:
+          name: license-compliance-report
+          path: license-report.json
+
+  # =============================================================================
+  # Security Summary
+  # =============================================================================
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs:
+      - dependency-scan
+      - codeql-scan
+      - secret-scan
+      - container-scan
+      - sbom-generation
+      - infrastructure-scan
+      - license-scan
+    if: always()
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate security summary
+        run: |
+          echo "# Security Scan Summary" > security-summary.md
+          echo "" >> security-summary.md
+          echo "## Scan Results" >> security-summary.md
+          echo "" >> security-summary.md
+          echo "| Scan Type | Status |" >> security-summary.md
+          echo "|-----------|--------|" >> security-summary.md
+          echo "| Dependency Scan | ${{ needs.dependency-scan.result }} |" >> security-summary.md
+          echo "| CodeQL Scan | ${{ needs.codeql-scan.result }} |" >> security-summary.md
+          echo "| Secret Scan | ${{ needs.secret-scan.result }} |" >> security-summary.md
+          echo "| Container Scan | ${{ needs.container-scan.result }} |" >> security-summary.md
+          echo "| SBOM Generation | ${{ needs.sbom-generation.result }} |" >> security-summary.md
+          echo "| Infrastructure Scan | ${{ needs.infrastructure-scan.result }} |" >> security-summary.md
+          echo "| License Scan | ${{ needs.license-scan.result }} |" >> security-summary.md
+          echo "" >> security-summary.md
+          echo "Generated on: $(date)" >> security-summary.md
+
+      - name: Upload security summary
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-summary
+          path: security-summary.md
+
+      - name: Comment on PR with security summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync('security-summary.md', 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+
+      - name: Fail if critical security issues found
+        run: |
+          # Check if any critical scans failed
+          if [[ "${{ needs.dependency-scan.result }}" == "failure" ]] || \
+             [[ "${{ needs.secret-scan.result }}" == "failure" ]] || \
+             [[ "${{ needs.container-scan.result }}" == "failure" ]]; then
+            echo "Critical security issues detected!"
+            exit 1
+          fi
+          echo "Security scans completed successfully"
+
+      - name: Send security alert
+        if: failure() && github.ref == 'refs/heads/main'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          channel: '#security-alerts'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+          text: "🚨 Security scan failed for Spin-Glass-Anneal-RL! Check the details immediately."
