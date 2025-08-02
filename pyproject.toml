@@ -1,0 +1,402 @@
+[build-system]
+requires = ["setuptools>=65.0", "wheel", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spin-glass-anneal-rl"
+dynamic = ["version"]
+description = "GPU-accelerated digital annealing for multi-agent scheduling via spin-glass models"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Terragon Labs", email = "contact@terragonlabs.com"},
+]
+maintainers = [
+    {name = "Terragon Labs", email = "contact@terragonlabs.com"},
+]
+keywords = [
+    "reinforcement-learning",
+    "optimization", 
+    "annealing",
+    "spin-glass",
+    "cuda",
+    "gpu",
+    "multi-agent",
+    "scheduling",
+    "ising-model",
+    "quantum-inspired"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.9"
+dependencies = [
+    # Core dependencies
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "torch>=2.0.0",
+    "numba>=0.58.0",
+    "cupy-cuda12x>=12.0.0; platform_machine=='x86_64'",
+    
+    # RL dependencies
+    "gymnasium>=0.28.0",
+    "stable-baselines3>=2.0.0",
+    "torch-geometric>=2.3.0",
+    
+    # Optimization
+    "networkx>=3.0",
+    "ortools>=9.6.0",
+    
+    # Data handling
+    "pandas>=2.0.0",
+    "h5py>=3.8.0",
+    "zarr>=2.14.0",
+    
+    # Visualization
+    "matplotlib>=3.7.0",
+    "plotly>=5.14.0",
+    "seaborn>=0.12.0",
+    
+    # Configuration
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "python-dotenv>=1.0.0",
+    "hydra-core>=1.3.0",
+    "omegaconf>=2.3.0",
+    
+    # Logging and monitoring
+    "loguru>=0.7.0",
+    "rich>=13.0.0",
+    "tqdm>=4.65.0",
+    
+    # Utilities
+    "click>=8.1.0",
+    "typer>=0.9.0",
+    "psutil>=5.9.0",
+]
+
+[project.optional-dependencies]
+# Development dependencies
+dev = [
+    # Testing
+    "pytest>=7.3.0",
+    "pytest-cov>=4.1.0",
+    "pytest-xdist>=3.3.0",
+    "pytest-benchmark>=4.0.0",
+    "pytest-mock>=3.10.0",
+    "pytest-timeout>=2.1.0",
+    "hypothesis>=6.75.0",
+    
+    # Code quality
+    "ruff>=0.0.270",
+    "black>=23.3.0",
+    "isort>=5.12.0",
+    "mypy>=1.3.0",
+    "pylint>=2.17.0",
+    "bandit>=1.7.5",
+    "safety>=2.3.0",
+    
+    # Pre-commit hooks
+    "pre-commit>=3.3.0",
+    
+    # Documentation
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+    "myst-parser>=2.0.0",
+    "sphinx-autoapi>=2.1.0",
+    "sphinx-copybutton>=0.5.0",
+    
+    # Development tools
+    "jupyter>=1.0.0",
+    "jupyterlab>=4.0.0",
+    "ipywidgets>=8.0.0",
+    "notebook>=6.5.0",
+    
+    # Performance profiling
+    "py-spy>=0.3.0",
+    "memory-profiler>=0.60.0",
+    "line-profiler>=4.0.0",
+    "snakeviz>=2.2.0",
+]
+
+# CUDA support
+cuda = [
+    "cupy-cuda12x>=12.0.0",
+    "numba-cuda>=0.0.12",
+    "pynvml>=11.5.0",
+    "nvidia-ml-py>=12.535.0",
+]
+
+# Quantum hardware interfaces
+quantum = [
+    "dwave-ocean-sdk>=6.5.0",
+    "dimod>=0.12.0",
+    "dwave-system>=1.20.0",
+    "dwave-samplers>=1.0.0",
+    "qiskit>=0.43.0",
+    "qiskit-aer>=0.12.0",
+]
+
+# Distributed computing
+distributed = [
+    "ray[default]>=2.5.0",
+    "dask[complete]>=2023.5.0",
+    "distributed>=2023.5.0",
+    "redis>=4.5.0",
+]
+
+# Experiment tracking
+tracking = [
+    "wandb>=0.15.0",
+    "mlflow>=2.4.0",
+    "tensorboard>=2.13.0",
+    "neptune>=1.2.0",
+]
+
+# Web interface
+web = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.22.0",
+    "streamlit>=1.24.0",
+    "gradio>=3.35.0",
+    "plotly-dash>=2.10.0",
+]
+
+# Benchmarking
+benchmarks = [
+    "memory-profiler>=0.60.0",
+    "psutil>=5.9.0",
+    "py-spy>=0.3.0",
+    "pympler>=0.9",
+]
+
+# All extras combined
+all = [
+    "spin-glass-anneal-rl[dev,cuda,quantum,distributed,tracking,web,benchmarks]"
+]
+
+[project.urls]
+Homepage = "https://github.com/terragonlabs/spin-glass-anneal-rl"
+Documentation = "https://spin-glass-anneal-rl.readthedocs.io"
+Repository = "https://github.com/terragonlabs/spin-glass-anneal-rl"
+Issues = "https://github.com/terragonlabs/spin-glass-anneal-rl/issues"
+Changelog = "https://github.com/terragonlabs/spin-glass-anneal-rl/blob/main/CHANGELOG.md"
+
+[project.scripts]
+spin-glass-rl = "spin_glass_rl.cli:main"
+sgrl = "spin_glass_rl.cli:main"
+
+[tool.setuptools]
+packages = ["spin_glass_rl"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+spin_glass_rl = [
+    "cuda/kernels/*.cu",
+    "cuda/kernels/*.cuh", 
+    "data/*.json",
+    "data/*.yaml",
+    "templates/*.json",
+    "templates/*.yaml",
+]
+
+[tool.setuptools_scm]
+write_to = "spin_glass_rl/_version.py"
+
+# =============================================================================
+# Code Quality Configuration
+# =============================================================================
+
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "D",   # pydocstyle
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "ARG", # flake8-unused-arguments
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "PTH", # flake8-use-pathlib
+]
+ignore = [
+    "D100", # Missing docstring in public module
+    "D101", # Missing docstring in public class  
+    "D102", # Missing docstring in public method
+    "D103", # Missing docstring in public function
+    "D104", # Missing docstring in public package
+    "D105", # Missing docstring in magic method
+    "D107", # Missing docstring in __init__
+    "E501", # Line too long (handled by black)
+    "B008", # Do not perform function calls in argument defaults
+]
+
+[tool.ruff.per-file-ignores]
+"tests/**/*.py" = ["D", "S101", "ARG"]
+"examples/**/*.py" = ["D", "T201"]
+"benchmarks/**/*.py" = ["D", "T201"]
+"scripts/**/*.py" = ["D", "T201"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.ruff.isort]
+known-first-party = ["spin_glass_rl"]
+force-single-line = false
+force-sort-within-sections = true
+
+[tool.black]
+line-length = 88
+target-version = ["py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["spin_glass_rl"]
+known_third_party = ["numpy", "torch", "scipy", "matplotlib", "numba", "cupy"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module = [
+    "cupy.*",
+    "numba.*", 
+    "ortools.*",
+    "dwave.*",
+    "dimod.*",
+    "ray.*",
+    "dask.*",
+    "wandb.*",
+    "mlflow.*",
+    "plotly.*",
+    "streamlit.*",
+    "gradio.*",
+]
+ignore_missing_imports = true
+
+# =============================================================================
+# Testing Configuration  
+# =============================================================================
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "--strict-markers",
+    "--strict-config", 
+    "--cov=spin_glass_rl",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+    "--cov-fail-under=80",
+    "--durations=10",
+]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "gpu: marks tests requiring GPU",
+    "cuda: marks tests requiring CUDA",
+    "quantum: marks tests requiring quantum hardware",
+    "integration: marks tests as integration tests",
+    "benchmark: marks tests as benchmarks",
+    "unit: marks tests as unit tests",
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["spin_glass_rl"]
+omit = [
+    "*/tests/*",
+    "*/benchmarks/*", 
+    "*/examples/*",
+    "spin_glass_rl/_version.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError", 
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", "examples", "benchmarks"]
+skips = ["B101", "B601"]
+
+# =============================================================================
+# Documentation Configuration
+# =============================================================================
+
+[tool.sphinx]
+source-dir = "docs"
+build-dir = "docs/_build"
+
+# =============================================================================
+# Development Scripts
+# =============================================================================
+
+[tool.setuptools.entry-points]
+console_scripts = [
+    "spin-glass-rl = spin_glass_rl.cli:main",
+    "sgrl = spin_glass_rl.cli:main",
+]

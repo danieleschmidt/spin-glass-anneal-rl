@@ -1,0 +1,157 @@
+# Docker ignore file for Spin-Glass-Anneal-RL
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env
+.envrc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+*.out
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+.nox/
+htmlcov/
+.hypothesis/
+cover/
+
+# Documentation
+docs/_build/
+site/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+tmp/
+temp/
+
+# Build artifacts
+*.o
+*.a
+*.so
+*.dll
+*.exe
+
+# CUDA
+*.fatbin
+*.cubin
+*.ptx
+
+# Development files
+.pre-commit-config.yaml
+.clang-format
+.editorconfig
+.markdownlint.json
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Configuration files with secrets
+.env.local
+.env.*.local
+secrets/
+*.key
+*.pem
+*.p12
+
+# Large files
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Data files (depending on size)
+data/large/
+*.hdf5
+*.h5
+*.npy
+*.npz
+
+# Model files
+models/
+checkpoints/
+*.ckpt
+*.pth
+*.pt
+
+# Profiling
+*.prof
+profiles/
+
+# Benchmarks
+benchmark_results/
+benchmark_*.json
+
+# Examples that might be large
+examples/large/

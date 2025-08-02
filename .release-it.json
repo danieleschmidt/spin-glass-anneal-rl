@@ -1,0 +1,40 @@
+{
+  "git": {
+    "requireCleanWorkingDir": true,
+    "commitMessage": "chore: release v${version}",
+    "tagName": "v${version}",
+    "tagAnnotation": "Release v${version}",
+    "push": true,
+    "requireUpstream": true
+  },
+  "github": {
+    "release": true,
+    "releaseName": "Release v${version}",
+    "releaseNotes": "**Full Changelog**: https://github.com/terragonlabs/spin-glass-anneal-rl/compare/${latestTag}...v${version}"
+  },
+  "npm": {
+    "publish": false
+  },
+  "hooks": {
+    "before:init": [
+      "python -m pytest tests/",
+      "python -m ruff check .",
+      "python -m black --check .",
+      "python -m mypy spin_glass_rl/"
+    ],
+    "after:bump": [
+      "python -m build",
+      "docker build -t spin-glass-rl:${version} .",
+      "docker tag spin-glass-rl:${version} spin-glass-rl:latest"
+    ],
+    "after:release": [
+      "echo 'Release ${version} completed successfully!'"
+    ]
+  },
+  "plugins": {
+    "@release-it/keep-a-changelog": {
+      "filename": "CHANGELOG.md",
+      "addUnreleased": true
+    }
+  }
+}

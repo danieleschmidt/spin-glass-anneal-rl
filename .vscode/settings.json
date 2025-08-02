@@ -1,0 +1,215 @@
+{
+  // Python configuration
+  "python.defaultInterpreterPath": "./venv/bin/python",
+  "python.terminal.activateEnvironment": true,
+  "python.terminal.activateEnvInCurrentTerminal": true,
+
+  // Linting configuration
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": false,
+  "python.linting.ruffEnabled": true,
+  "python.linting.banditEnabled": true,
+  "python.linting.mypyEnabled": true,
+  "python.linting.lintOnSave": true,
+
+  // Formatting configuration
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": ["--line-length=88"],
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": false,
+
+  // Import organization
+  "python.sortImports.args": ["--profile", "black"],
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true,
+    "source.fixAll.ruff": true
+  },
+
+  // Testing configuration
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestArgs": [
+    "tests"
+  ],
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+
+  // Type checking
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "mypy-type-checker.args": ["--config-file=pyproject.toml"],
+
+  // CUDA and C++ configuration
+  "files.associations": {
+    "*.cu": "cuda-cpp",
+    "*.cuh": "cuda-cpp",
+    "*.cuh": "c"
+  },
+  "C_Cpp.default.intelliSenseMode": "gcc-x64",
+  "C_Cpp.default.cStandard": "c11",
+  "C_Cpp.default.cppStandard": "c++17",
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/**",
+    "/usr/local/cuda/include",
+    "/opt/cuda/include"
+  ],
+
+  // Editor configuration
+  "editor.rulers": [88, 100],
+  "editor.wordWrap": "wordWrapColumn", 
+  "editor.wordWrapColumn": 88,
+  "editor.insertSpaces": true,
+  "editor.tabSize": 4,
+  "editor.detectIndentation": false,
+  "editor.trimAutoWhitespace": true,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+
+  // File exclusions
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/build": true,
+    "**/dist": true,
+    "**/*.egg-info": true,
+    "**/.coverage": true,
+    "**/htmlcov": true,
+    "**/.env": true
+  },
+
+  // Search exclusions
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.ruff_cache": true,
+    "**/build": true,
+    "**/dist": true,
+    "**/*.egg-info": true,
+    "**/htmlcov": true,
+    "**/logs": true,
+    "**/profiles": true
+  },
+
+  // Jupyter configuration
+  "jupyter.askForKernelRestart": false,
+  "jupyter.interactiveWindow.textEditor.executeSelection": true,
+  "jupyter.sendSelectionToInteractiveWindow": true,
+
+  // Git configuration
+  "git.ignoreLimitWarning": true,
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+
+  // Terminal configuration
+  "terminal.integrated.env.linux": {
+    "PYTHONPATH": "${workspaceFolder}",
+    "CUDA_VISIBLE_DEVICES": "0,1,2,3"
+  },
+  "terminal.integrated.env.osx": {
+    "PYTHONPATH": "${workspaceFolder}"
+  },
+  "terminal.integrated.env.windows": {
+    "PYTHONPATH": "${workspaceFolder}"
+  },
+
+  // Extension-specific configurations
+  "autoDocstring.docstringFormat": "google",
+  "autoDocstring.startOnNewLine": false,
+  "autoDocstring.includeExtendedSummary": true,
+
+  // Docker configuration
+  "docker.defaultRegistryPath": "",
+  "docker.imageBuildContextPath": ".",
+
+  // Live Share
+  "liveshare.guestApprovalRequired": false,
+  "liveshare.anonymousGuestApproval": "accept",
+
+  // Spell checking
+  "cSpell.words": [
+    "anneal",
+    "annealing", 
+    "ising",
+    "qubo",
+    "cuda",
+    "numba",
+    "cupy",
+    "pytorch",
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "seaborn",
+    "plotly",
+    "wandb",
+    "mlflow",
+    "tensorboard",
+    "gymnasium",
+    "terragon",
+    "dwave",
+    "fujitsu",
+    "qiskit",
+    "ortools",
+    "gradio",
+    "streamlit",
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "hydra",
+    "omegaconf",
+    "loguru",
+    "typer",
+    "click",
+    "psutil"
+  ],
+
+  // File watchers
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/*/**": true,
+    "**/.hg/store/**": true,
+    "**/__pycache__/**": true,
+    "**/.pytest_cache/**": true,
+    "**/.mypy_cache/**": true,
+    "**/.ruff_cache/**": true,
+    "**/logs/**": true,
+    "**/profiles/**": true
+  },
+
+  // Workbench configuration
+  "workbench.colorCustomizations": {
+    "activityBar.background": "#1e1e1e",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBarBadge.background": "#007acc",
+    "activityBarBadge.foreground": "#ffffff"
+  },
+
+  // Problems panel
+  "problems.showCurrentInStatus": true,
+
+  // Bracket pair colorization
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+
+  // Minimap
+  "editor.minimap.enabled": true,
+  "editor.minimap.maxColumn": 100,
+
+  // IntelliSense
+  "editor.suggestSelection": "first",
+  "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+
+  // Performance
+  "extensions.experimental.affinity": {
+    "ms-python.python": 1,
+    "ms-python.pylint": 1,
+    "charliermarsh.ruff": 1,
+    "ms-python.mypy-type-checker": 1
+  }
+}

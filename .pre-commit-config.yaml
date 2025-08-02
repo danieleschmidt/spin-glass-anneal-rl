@@ -1,0 +1,197 @@
+# Pre-commit configuration for Spin-Glass-Anneal-RL
+# See https://pre-commit.com for more information
+
+repos:
+  # Pre-commit hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ".*\\.md$"
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ["--unsafe"]
+      - id: check-json
+      - id: check-toml
+      - id: check-xml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=10000"]
+      - id: debug-statements
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+      - id: requirements-txt-fixer
+
+  # Python formatting with Black
+  - repo: https://github.com/psf/black
+    rev: 23.7.0
+    hooks:
+      - id: black
+        language_version: python3.11
+        args: ["--line-length=88"]
+
+  # Import sorting with isort
+  - repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--line-length=88"]
+
+  # Linting and code quality with Ruff
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.0.280
+    hooks:
+      - id: ruff
+        args: ["--fix", "--exit-non-zero-on-fix"]
+
+  # Type checking with mypy
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.4.1
+    hooks:
+      - id: mypy
+        additional_dependencies: [
+          types-requests,
+          types-PyYAML,
+          types-setuptools,
+          numpy,
+          torch,
+        ]
+        args: ["--install-types", "--non-interactive"]
+
+  # Security scanning with bandit
+  - repo: https://github.com/pycqa/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: ["-c", "pyproject.toml"]
+        additional_dependencies: ["bandit[toml]"]
+
+  # Dependency vulnerability scanning
+  - repo: https://github.com/pyupio/safety
+    rev: 2.3.4
+    hooks:
+      - id: safety
+        args: ["--ignore=51668"]  # Ignore known false positives
+
+  # YAML formatting
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.0.0
+    hooks:
+      - id: prettier
+        types: [yaml]
+        exclude: ".*\\.github/.*\\.ya?ml$"
+
+  # Markdown linting
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.35.0
+    hooks:
+      - id: markdownlint
+        args: ["--fix", "--config", ".markdownlint.json"]
+
+  # Dockerfile linting
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        args: ["--ignore", "DL3008", "--ignore", "DL3009"]
+
+  # Shell script linting
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.5
+    hooks:
+      - id: shellcheck
+
+  # CUDA formatting (if available)
+  - repo: local
+    hooks:
+      - id: cuda-format
+        name: CUDA C++ Formatting
+        entry: clang-format
+        language: system
+        files: '.*\.(cu|cuh)$'
+        args: ["-i", "-style=file"]
+
+  # Jupyter notebook cleaning
+  - repo: https://github.com/nbQA-dev/nbQA
+    rev: 1.7.0
+    hooks:
+      - id: nbqa-black
+      - id: nbqa-isort
+        args: ["--profile=black"]
+      - id: nbqa-ruff
+
+  # Remove output from Jupyter notebooks
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.6.1
+    hooks:
+      - id: nbstripout
+
+  # Custom hooks for project-specific checks
+  - repo: local
+    hooks:
+      # Check for TODO/FIXME comments in production code
+      - id: check-todos
+        name: Check for TODOs
+        entry: bash -c 'if grep -r "TODO\|FIXME" spin_glass_rl/ --exclude-dir=__pycache__ --exclude="*.pyc"; then echo "Found TODO/FIXME in production code"; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+      # Ensure CUDA kernels have proper error checking
+      - id: cuda-error-check
+        name: CUDA Error Checking
+        entry: bash -c 'if find . -name "*.cu" -exec grep -L "cudaGetLastError\|checkCudaErrors" {} \; | grep -q .; then echo "CUDA files without error checking found"; exit 1; fi'
+        language: system
+        files: '.*\.cu$'
+
+      # Check for hardcoded paths
+      - id: check-hardcoded-paths
+        name: Check for hardcoded paths
+        entry: bash -c 'if grep -r "/home\|/Users\|C:\\\\" spin_glass_rl/ --exclude-dir=__pycache__ --exclude="*.pyc" --exclude-dir=tests; then echo "Hardcoded paths found"; exit 1; fi'
+        language: system
+        pass_filenames: false
+
+      # Validate JSON configuration files
+      - id: validate-configs
+        name: Validate configuration files
+        entry: python -m json.tool
+        language: system
+        files: 'config/.*\.json$'
+
+# Global configuration
+default_install_hook_types: [pre-commit, pre-push, commit-msg]
+default_stages: [commit]
+
+# Performance optimization
+repos:
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes
+
+# Custom commit message validation
+repos:
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v2.3.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [
+          "build", "chore", "ci", "docs", "feat", "fix", "perf", 
+          "refactor", "revert", "style", "test"
+        ]
+
+ci:
+  autofix_commit_msg: |
+    [pre-commit.ci] auto fixes from pre-commit.com hooks
+
+    for more information, see https://pre-commit.ci
+  autofix_prs: true
+  autoupdate_branch: ''
+  autoupdate_commit_msg: '[pre-commit.ci] pre-commit autoupdate'
+  autoupdate_schedule: weekly
+  skip: []
+  submodules: false
