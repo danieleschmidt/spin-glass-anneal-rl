@@ -185,11 +185,133 @@ class SpinDynamics:
         """
         Wolff cluster algorithm update.
         
-        Note: Simplified implementation for demonstration.
-        Full implementation would build and flip entire clusters.
+        Builds and flips entire clusters of aligned spins for improved mixing
+        in systems near critical temperature.
+        
+        Args:
+            site: Starting site for cluster building
+            
+        Returns:
+            (True, delta_energy): Cluster flip is always accepted
         """
-        # For now, fall back to Metropolis for single-site updates
-        return self._metropolis_update(site)
+        if self.model.is_sparse:
+            return self._wolff_cluster_sparse(site)
+        else:
+            return self._wolff_cluster_dense(site)
+    
+    def _wolff_cluster_dense(self, start_site: int) -> Tuple[bool, float]:
+        """Wolff cluster algorithm for dense coupling matrices."""
+        initial_energy = self.model.compute_energy()
+        
+        # Get coupling matrix and current spins
+        couplings = self.model.couplings
+        spins = self.model.spins.clone()
+        start_spin = spins[start_site].item()
+        
+        # Build cluster using breadth-first search
+        cluster = set()
+        queue = [start_site]
+        cluster.add(start_site)
+        
+        while queue:
+            current_site = queue.pop(0)
+            current_spin = spins[current_site].item()
+            
+            # Check all neighbors
+            for neighbor in range(self.model.n_spins):
+                if neighbor == current_site or neighbor in cluster:
+                    continue
+                
+                coupling = couplings[current_site, neighbor].item()
+                neighbor_spin = spins[neighbor].item()
+                
+                # Add to cluster if spins are aligned and coupling is ferromagnetic
+                if (coupling < 0 and current_spin == neighbor_spin):
+                    # Probability of adding to cluster: 1 - exp(-2J/T) for J < 0
+                    prob_add = 1.0 - torch.exp(torch.tensor(2.0 * coupling / self.temperature))
+                    
+                    if torch.rand(1).item() < prob_add:
+                        cluster.add(neighbor)
+                        queue.append(neighbor)
+        
+        # Flip entire cluster
+        for site in cluster:
+            self.model.flip_spin(site)
+        
+        # Calculate energy change
+        final_energy = self.model.compute_energy()
+        delta_energy = final_energy - initial_energy
+        
+        # Wolff moves are always accepted
+        self.n_accepted += len(cluster)
+        
+        return True, delta_energy
+    
+    def _wolff_cluster_sparse(self, start_site: int) -> Tuple[bool, float]:
+        """Wolff cluster algorithm for sparse coupling matrices."""
+        initial_energy = self.model.compute_energy()
+        
+        # Get sparse coupling matrix
+        couplings = self.model.couplings
+        spins = self.model.spins.clone()
+        start_spin = spins[start_site].item()
+        
+        # Build cluster using sparse neighbors
+        cluster = set()
+        queue = [start_site]
+        cluster.add(start_site)
+        
+        while queue:
+            current_site = queue.pop(0)
+            current_spin = spins[current_site].item()
+            
+            # Get neighbors from sparse matrix
+            if couplings.is_sparse:
+                # For sparse COO format
+                indices = couplings.coalesce().indices()
+                values = couplings.coalesce().values()
+                
+                # Find all couplings involving current_site
+                mask = (indices[0] == current_site) | (indices[1] == current_site)
+                relevant_indices = indices[:, mask]
+                relevant_values = values[mask]
+                
+                for i, coupling_val in enumerate(relevant_values):
+                    # Determine neighbor
+                    if relevant_indices[0, i] == current_site:
+                        neighbor = relevant_indices[1, i].item()
+                    else:
+                        neighbor = relevant_indices[0, i].item()
+                    
+                    if neighbor in cluster:
+                        continue
+                    
+                    neighbor_spin = spins[neighbor].item()
+                    coupling = coupling_val.item()
+                    
+                    # Add to cluster if spins are aligned and coupling is ferromagnetic
+                    if (coupling < 0 and current_spin == neighbor_spin):
+                        prob_add = 1.0 - torch.exp(torch.tensor(2.0 * coupling / self.temperature))
+                        
+                        if torch.rand(1).item() < prob_add:
+                            cluster.add(neighbor)
+                            queue.append(neighbor)
+            else:
+                # Fall back to dense method
+                return self._wolff_cluster_dense(start_site)
+        
+        # Flip entire cluster
+        for site in cluster:
+            self.model.flip_spin(site)
+        
+        # Calculate energy change
+        final_energy = self.model.compute_energy()
+        delta_energy = final_energy - initial_energy
+        
+        # Wolff moves are always accepted
+        self.n_accepted += len(cluster)
+        
+        return True, delta_energy
     
     def get_acceptance_rate(self) -> float:
         """Get current acceptance rate."""

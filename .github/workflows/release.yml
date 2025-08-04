@@ -1,0 +1,355 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.2.3)'
+        required: true
+        type: string
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  validate-release:
+    name: Validate Release
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Run full test suite
+      run: |
+        pytest tests/ \
+          --cov=spin_glass_rl \
+          --cov-fail-under=85 \
+          -v
+
+    - name: Run security checks
+      run: |
+        python3 security_scan.py
+        bandit -r spin_glass_rl/ -ll
+
+    - name: Validate version
+      run: |
+        python -c "
+        import spin_glass_rl
+        version = spin_glass_rl.__version__
+        tag = '${{ github.ref_name }}'
+        if tag.startswith('v'):
+            tag = tag[1:]
+        assert version == tag, f'Version mismatch: {version} != {tag}'
+        print(f'Version validated: {version}')
+        "
+
+  build-release:
+    name: Build Release Artifacts
+    runs-on: ubuntu-latest
+    needs: validate-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install build dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install build twine
+
+    - name: Build source distribution
+      run: python -m build --sdist
+
+    - name: Build wheel distribution
+      run: python -m build --wheel
+
+    - name: Check distributions
+      run: twine check dist/*
+
+    - name: Upload release artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-distributions
+        path: dist/
+
+  build-docker:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    needs: validate-release
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract version
+      id: version
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "major=$(echo $VERSION | cut -d. -f1)" >> $GITHUB_OUTPUT
+        echo "minor=$(echo $VERSION | cut -d. -f1-2)" >> $GITHUB_OUTPUT
+
+    - name: Build and push Docker images
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          terragonlabs/spin-glass-anneal-rl:latest
+          terragonlabs/spin-glass-anneal-rl:${{ steps.version.outputs.version }}
+          terragonlabs/spin-glass-anneal-rl:${{ steps.version.outputs.major }}
+          terragonlabs/spin-glass-anneal-rl:${{ steps.version.outputs.minor }}
+          ghcr.io/terragonlabs/spin-glass-anneal-rl:latest
+          ghcr.io/terragonlabs/spin-glass-anneal-rl:${{ steps.version.outputs.version }}
+        labels: |
+          org.opencontainers.image.title=Spin-Glass-Anneal-RL
+          org.opencontainers.image.description=GPU-accelerated optimization via physics-inspired RL
+          org.opencontainers.image.version=${{ steps.version.outputs.version }}
+          org.opencontainers.image.source=https://github.com/terragonlabs/spin-glass-anneal-rl
+          org.opencontainers.image.licenses=MIT
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: [build-release]
+    environment: release
+    
+    steps:
+    - name: Download release artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: release-distributions
+        path: dist/
+
+    - name: Publish to Test PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+
+    - name: Test installation from Test PyPI
+      run: |
+        sleep 60  # Wait for package to be available
+        pip install \
+          --index-url https://test.pypi.org/simple/ \
+          --extra-index-url https://pypi.org/simple/ \
+          spin-glass-anneal-rl
+
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+
+  create-github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-release, build-docker]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Download release artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: release-distributions
+        path: dist/
+
+    - name: Generate changelog
+      id: changelog
+      run: |
+        # Generate changelog from commits since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+        if [ -n "$LAST_TAG" ]; then
+          CHANGES=$(git log --pretty=format:"- %s" $LAST_TAG..HEAD)
+        else
+          CHANGES=$(git log --pretty=format:"- %s" HEAD)
+        fi
+        
+        cat << EOF > CHANGELOG.md
+        ## What's Changed
+        
+        $CHANGES
+        
+        ## Installation
+        
+        \`\`\`bash
+        pip install spin-glass-anneal-rl==${{ github.ref_name }}
+        \`\`\`
+        
+        ## Docker
+        
+        \`\`\`bash
+        docker pull terragonlabs/spin-glass-anneal-rl:${{ github.ref_name }}
+        \`\`\`
+        EOF
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: Release ${{ github.ref_name }}
+        body_path: CHANGELOG.md
+        files: |
+          dist/*
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [publish-pypi, create-github-release]
+    environment: staging
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Deploy to staging
+      run: |
+        kubectl set image deployment/spin-glass-rl-staging \
+          spin-glass-rl=terragonlabs/spin-glass-anneal-rl:${{ github.ref_name }} \
+          --namespace=staging
+
+    - name: Wait for deployment
+      run: |
+        kubectl rollout status deployment/spin-glass-rl-staging \
+          --namespace=staging \
+          --timeout=300s
+
+    - name: Run smoke tests
+      run: |
+        # Wait for pods to be ready
+        sleep 30
+        
+        # Get service endpoint
+        ENDPOINT=$(kubectl get service spin-glass-rl-staging \
+          --namespace=staging \
+          -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        
+        # Run basic health check
+        curl -f http://$ENDPOINT:8888/health
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    environment: production
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.PROD_KUBE_CONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=kubeconfig
+
+    - name: Deploy to production
+      run: |
+        kubectl set image deployment/spin-glass-rl \
+          spin-glass-rl=terragonlabs/spin-glass-anneal-rl:${{ github.ref_name }} \
+          --namespace=production
+
+    - name: Wait for deployment
+      run: |
+        kubectl rollout status deployment/spin-glass-rl \
+          --namespace=production \
+          --timeout=600s
+
+    - name: Run production health checks
+      run: |
+        # Wait for pods to be ready
+        sleep 60
+        
+        # Get service endpoint
+        ENDPOINT=$(kubectl get service spin-glass-rl \
+          --namespace=production \
+          -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        
+        # Run comprehensive health checks
+        curl -f http://$ENDPOINT:8888/health
+        curl -f http://$ENDPOINT:8888/metrics
+
+  notify:
+    name: Notify Release
+    runs-on: ubuntu-latest
+    needs: [deploy-production]
+    if: always()
+    
+    steps:
+    - name: Notify Slack
+      if: needs.deploy-production.result == 'success'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: success
+        text: |
+          🎉 Spin-Glass-Anneal-RL ${{ github.ref_name }} has been successfully released!
+          
+          📦 PyPI: https://pypi.org/project/spin-glass-anneal-rl/
+          🐳 Docker: terragonlabs/spin-glass-anneal-rl:${{ github.ref_name }}
+          📋 Release Notes: https://github.com/terragonlabs/spin-glass-anneal-rl/releases/tag/${{ github.ref_name }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    - name: Notify Slack on Failure
+      if: needs.deploy-production.result == 'failure'
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: |
+          ❌ Spin-Glass-Anneal-RL ${{ github.ref_name }} release failed!
+          
+          Please check the GitHub Actions logs for details.
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
