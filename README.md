@@ -28,7 +28,7 @@ pip install spin-glass-anneal-rl[cuda]
 pip install spin-glass-anneal-rl[quantum]
 
 # Development installation
-git clone https://github.com/yourusername/spin-glass-anneal-rl
+git clone https://github.com/danieleschmidt/spin-glass-anneal-rl
 cd spin-glass-anneal-rl
 pip install -e ".[dev]"
 ```
@@ -739,6 +739,6 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 ## Resources
 
 - [Documentation](https://spin-glass-anneal-rl.readthedocs.io)
-- [Tutorials](https://github.com/yourusername/spin-glass-anneal-rl/tutorials)
+- [Tutorials](https://github.com/danieleschmidt/spin-glass-anneal-rl/tutorials)
 - [Discord Community](https://discord.gg/spin-glass-rl)
 - [Benchmark Dataset](https://spin-glass-rl.github.io/benchmarks)
