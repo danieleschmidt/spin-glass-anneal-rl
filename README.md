@@ -716,9 +716,9 @@ iso_annealer = IsenergeticMoves(
 ```bibtex
 @software{spin_glass_anneal_rl,
   title={Spin-Glass-Anneal-RL: GPU-Accelerated Ising Solvers for Multi-Agent Scheduling},
-  author={Your Name},
+  author={Daniel Schmidt},
   year={2025},
-  url={https://github.com/yourusername/spin-glass-anneal-rl}
+  url={https://github.com/danieleschmidt/spin-glass-anneal-rl}
 }
 ```
 
