@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from spin_glass_rl.core.ising_model import IsingModel
 from spin_glass_rl.core.spin_dynamics import SpinDynamics, UpdateRule
 from spin_glass_rl.annealing.result import AnnealingResult
+from spin_glass_rl.annealing.cuda_kernels import CUDAKernelManager
 
 
 @dataclass
@@ -69,6 +70,14 @@ class ParallelTempering:
         
         # Thread pool for parallel execution
         self.n_threads = config.n_threads or min(config.n_replicas, 8)
+        
+        # Initialize CUDA support if available
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.use_cuda = self.device.type == "cuda"
+        if self.use_cuda:
+            self.cuda_kernels = CUDAKernelManager(self.device)
+        else:
+            self.cuda_kernels = None
     
     def run(
         self,
@@ -212,10 +221,15 @@ class ParallelTempering:
     
     def _all_pairs_exchange(self) -> None:
         """Attempt exchanges between all replica pairs."""
-        for i in range(self.config.n_replicas - 1):
-            for j in range(i + 1, self.config.n_replicas):
-                if np.random.rand() < 0.1:  # Limit exchange attempts
-                    self._attempt_single_exchange(i, j)
+        # Use CUDA optimized exchange if available
+        if self.use_cuda and self.cuda_kernels is not None:
+            self._cuda_optimized_exchange()
+        else:
+            # CPU fallback
+            for i in range(self.config.n_replicas - 1):
+                for j in range(i + 1, self.config.n_replicas):
+                    if np.random.rand() < 0.1:  # Limit exchange attempts
+                        self._attempt_single_exchange(i, j)
     
     def _attempt_single_exchange(self, i: int, j: int) -> None:
         """Attempt exchange between replicas i and j."""
@@ -242,6 +256,41 @@ class ParallelTempering:
             self.replicas[j].set_spins(temp_spins)
             
             self.exchange_accepts[pair_idx] += 1
+    
+    def _cuda_optimized_exchange(self) -> None:
+        """Perform optimized parallel tempering exchanges using CUDA kernels."""
+        if not self.use_cuda or self.cuda_kernels is None:
+            return
+        
+        # Prepare tensors for batch exchange
+        n_replicas = len(self.replicas)
+        n_spins = self.replicas[0].n_spins
+        
+        # Stack all spin configurations
+        spins_arrays = torch.stack([replica.get_spins() for replica in self.replicas])
+        
+        # Compute energies for all replicas
+        energies = torch.tensor([
+            replica.compute_energy() for replica in self.replicas
+        ], device=self.device)
+        
+        # Temperature array
+        temperatures = torch.tensor(self.temperatures, device=self.device)
+        
+        # Use CUDA kernel for parallel exchange
+        successful_exchanges = self.cuda_kernels.parallel_tempering_exchange_optimized(
+            spins_arrays=spins_arrays,
+            energies=energies,
+            temperatures=temperatures
+        )
+        
+        # Update replicas with new configurations
+        for i, replica in enumerate(self.replicas):
+            replica.set_spins(spins_arrays[i])
+        
+        # Update exchange statistics
+        if n_replicas > 1:
+            self.exchange_accepts[0] += successful_exchanges
     
     def _record_statistics(self) -> None:
         """Record energy and temperature histories."""

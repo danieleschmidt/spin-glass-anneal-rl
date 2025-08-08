@@ -10,6 +10,7 @@ from spin_glass_rl.core.ising_model import IsingModel
 from spin_glass_rl.core.spin_dynamics import SpinDynamics, UpdateRule
 from spin_glass_rl.annealing.temperature_scheduler import TemperatureScheduler, ScheduleType
 from spin_glass_rl.annealing.result import AnnealingResult
+from spin_glass_rl.annealing.cuda_kernels import CUDAKernelManager, GPUMemoryOptimizer
 
 
 @dataclass
@@ -59,8 +60,13 @@ class GPUAnnealer:
         
         if self.use_cuda:
             print(f"Using GPU: {torch.cuda.get_device_name()}")
+            # Initialize CUDA kernel manager for optimized operations
+            self.cuda_kernels = CUDAKernelManager(self.device)
+            self.memory_optimizer = GPUMemoryOptimizer(self.device)
         else:
             print("CUDA not available, using CPU")
+            self.cuda_kernels = None
+            self.memory_optimizer = None
         
         # Performance tracking
         self.total_flips = 0
@@ -174,19 +180,55 @@ class GPUAnnealer:
         return dynamics.sweep()
     
     def _gpu_sweep(self, model: IsingModel, dynamics: SpinDynamics) -> float:
-        """Perform one Monte Carlo sweep on GPU."""
-        # For now, fall back to CPU implementation
-        # In full CUDA implementation, would launch custom kernels
-        return self._cpu_sweep(model, dynamics)
+        """Perform one Monte Carlo sweep on GPU using optimized CUDA kernels."""
+        if self.cuda_kernels is None:
+            # Fall back to CPU if CUDA kernels not available
+            return self._cpu_sweep(model, dynamics)
+        
+        # Use optimized CUDA kernel for Metropolis updates
+        if dynamics.update_rule == UpdateRule.METROPOLIS:
+            updated_spins, accepted_flips, energy_changes = self.cuda_kernels.metropolis_update_optimized(
+                spins=model.get_spins(),
+                couplings=model.couplings,
+                external_fields=model.external_fields,
+                temperature=dynamics.temperature,
+                n_updates=1
+            )
+            
+            # Update model with new spin configuration
+            model.set_spins(updated_spins)
+            
+            # Update dynamics statistics
+            dynamics.accepted_flips += accepted_flips
+            dynamics.total_flips += model.n_spins
+            
+            # Compute and return energy using optimized kernel
+            return self.cuda_kernels.compute_energy_optimized(
+                spins=updated_spins,
+                couplings=model.couplings,
+                external_fields=model.external_fields
+            )
+        else:
+            # Fall back to CPU for other update rules
+            return self._cpu_sweep(model, dynamics)
     
     def _launch_gpu_kernel(self, model: IsingModel, temperature: float) -> None:
         """Launch CUDA kernel for parallel spin updates."""
-        # Placeholder for CUDA kernel launch
-        # Would implement custom CUDA kernels for:
-        # 1. Parallel spin updates
-        # 2. Energy computation
-        # 3. Random number generation
-        pass
+        if self.cuda_kernels is not None:
+            # Launch optimized Metropolis update kernel
+            updated_spins, accepted_flips, energy_changes = self.cuda_kernels.metropolis_update_optimized(
+                spins=model.get_spins(),
+                couplings=model.couplings,
+                external_fields=model.external_fields,
+                temperature=temperature,
+                n_updates=1
+            )
+            
+            # Update model state
+            model.set_spins(updated_spins)
+            self.total_flips += accepted_flips
+        else:
+            print("Warning: CUDA kernels not available, cannot launch GPU kernel")
     
     def _check_convergence(self, energy_history: List[float]) -> bool:
         """Check if annealing has converged."""
