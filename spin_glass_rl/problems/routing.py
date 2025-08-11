@@ -200,14 +200,45 @@ class TSPProblem(RoutingProblem):
         
         Variables: x_{i,p} = 1 if city i is visited at position p in tour
         """
+        # Enhanced validation
+        if not self.locations:
+            raise ValueError("TSP requires at least one location")
         if len(self.locations) < 2:
             raise ValueError("TSP requires at least 2 locations")
+        if len(self.locations) > 1000:
+            print("Warning: Large TSP instance may be slow. Consider using hierarchical methods.")
+        
+        # Validate locations have valid coordinates
+        for i, loc in enumerate(self.locations):
+            if not isinstance(loc.x, (int, float)) or not isinstance(loc.y, (int, float)):
+                raise ValueError(f"Location {i} has invalid coordinates: ({loc.x}, {loc.y})")
+            if not (-1e6 <= loc.x <= 1e6) or not (-1e6 <= loc.y <= 1e6):
+                print(f"Warning: Location {i} has extreme coordinates: ({loc.x}, {loc.y})")
         
         if penalty_weights is None:
             penalty_weights = {
                 "city_visit": 100.0,
                 "position_fill": 100.0
             }
+        
+        # Validate penalty weights
+        required_weights = {"city_visit", "position_fill"}
+        missing_weights = required_weights - set(penalty_weights.keys())
+        if missing_weights:
+            raise ValueError(f"Missing required penalty weights: {missing_weights}")
+        
+        for key, weight in penalty_weights.items():
+            if not isinstance(weight, (int, float)) or weight <= 0:
+                raise ValueError(f"Penalty weight '{key}' must be a positive number, got: {weight}")
+            if weight > 1e6:
+                print(f"Warning: Very large penalty weight for '{key}': {weight}")
+        
+        # Auto-scale penalty weights for large problems
+        n_cities = len(self.locations)
+        if n_cities > 50:
+            scale_factor = np.sqrt(n_cities / 50.0)
+            penalty_weights = {k: v * scale_factor for k, v in penalty_weights.items()}
+            print(f"Auto-scaled penalty weights by factor {scale_factor:.2f} for large problem")
         
         # Ensure distance matrix exists
         if self.distance_matrix is None:
