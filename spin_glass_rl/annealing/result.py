@@ -35,8 +35,28 @@ class AnnealingResult:
     random_seed: Optional[int] = None
     
     def __post_init__(self):
-        """Compute derived statistics."""
+        """Compute derived statistics with validation."""
+        # Validation checks
+        if not isinstance(self.best_configuration, torch.Tensor):
+            raise TypeError("best_configuration must be a torch.Tensor")
+        
+        if not isinstance(self.best_energy, (int, float)):
+            raise TypeError("best_energy must be a numeric value")
+        
+        if np.isnan(self.best_energy) or np.isinf(self.best_energy):
+            raise ValueError("best_energy contains invalid values (NaN or Inf)")
+        
+        if self.total_time < 0:
+            raise ValueError("total_time must be non-negative")
+        
+        if self.n_sweeps <= 0:
+            raise ValueError("n_sweeps must be positive")
+        
         if self.energy_history:
+            # Validate energy history
+            if any(np.isnan(e) or np.isinf(e) for e in self.energy_history):
+                raise ValueError("energy_history contains invalid values (NaN or Inf)")
+            
             self.energy_std = float(np.std(self.energy_history))
             
             # Find convergence point (where energy stabilizes)

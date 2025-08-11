@@ -143,32 +143,64 @@ class CUDAKernelManager:
             return
         
         try:
+            # Check for NVCC compiler
+            import subprocess
+            try:
+                subprocess.check_output(['nvcc', '--version'], stderr=subprocess.STDOUT)
+            except (subprocess.CalledProcessError, FileNotFoundError):
+                print("Warning: NVCC compiler not found. CUDA kernels will not be compiled.")
+                print("Falling back to PyTorch operations.")
+                return
+            
             # Try to compile kernels using torch.utils.cpp_extension
             from torch.utils.cpp_extension import load_inline
             
-            # Compile spin update kernel
-            self.compiled_kernels['metropolis_update'] = load_inline(
-                name='metropolis_update',
-                cpp_sources=[],
-                cuda_sources=[SPIN_UPDATE_KERNEL_SOURCE],
-                verbose=False
-            )
+            print("Compiling CUDA kernels... (this may take a moment)")
+            
+            # Compile spin update kernel with better error handling
+            try:
+                self.compiled_kernels['metropolis_update'] = load_inline(
+                    name='metropolis_update',
+                    cpp_sources=[],
+                    cuda_sources=[SPIN_UPDATE_KERNEL_SOURCE],
+                    verbose=False,
+                    extra_cuda_cflags=['-O3', '--use_fast_math'],
+                    extra_ldflags=['-lcurand']
+                )
+                print("✓ Metropolis update kernel compiled successfully")
+            except Exception as e:
+                print(f"✗ Failed to compile Metropolis kernel: {e}")
+                raise
             
             # Compile energy computation kernel
-            self.compiled_kernels['compute_energy'] = load_inline(
-                name='compute_energy',
-                cpp_sources=[],
-                cuda_sources=[ENERGY_KERNEL_SOURCE],
-                verbose=False
-            )
+            try:
+                self.compiled_kernels['compute_energy'] = load_inline(
+                    name='compute_energy',
+                    cpp_sources=[],
+                    cuda_sources=[ENERGY_KERNEL_SOURCE],
+                    verbose=False,
+                    extra_cuda_cflags=['-O3', '--use_fast_math']
+                )
+                print("✓ Energy computation kernel compiled successfully")
+            except Exception as e:
+                print(f"✗ Failed to compile energy kernel: {e}")
+                raise
             
             # Compile parallel tempering kernel
-            self.compiled_kernels['parallel_tempering'] = load_inline(
-                name='parallel_tempering',
-                cpp_sources=[],
-                cuda_sources=[PARALLEL_TEMPERING_KERNEL_SOURCE],
-                verbose=False
-            )
+            try:
+                self.compiled_kernels['parallel_tempering'] = load_inline(
+                    name='parallel_tempering',
+                    cpp_sources=[],
+                    cuda_sources=[PARALLEL_TEMPERING_KERNEL_SOURCE],
+                    verbose=False,
+                    extra_cuda_cflags=['-O3', '--use_fast_math']
+                )
+                print("✓ Parallel tempering kernel compiled successfully")
+            except Exception as e:
+                print(f"✗ Failed to compile parallel tempering kernel: {e}")
+                raise
+            
+            print("✓ All CUDA kernels compiled successfully")
             
         except Exception as e:
             # Fall back to PyTorch operations if kernel compilation fails

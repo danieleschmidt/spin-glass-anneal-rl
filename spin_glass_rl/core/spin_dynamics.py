@@ -44,6 +44,7 @@ class SpinDynamics:
         self.n_accepted = 0
         self.n_rejected = 0
         self.energy_history = []
+        self.magnetization_history = []
         
         # Update function mapping
         self._update_functions = {
@@ -86,6 +87,10 @@ class SpinDynamics:
         current_energy = self.model.compute_energy()
         self.energy_history.append(current_energy)
         
+        # Track magnetization (sum of all spins)
+        current_magnetization = self.model.get_spins().sum().item()
+        self.magnetization_history.append(current_magnetization)
+        
         return current_energy
     
     def run_dynamics(self, n_sweeps: int, record_interval: int = 1) -> dict:
@@ -107,6 +112,10 @@ class SpinDynamics:
             if sweep % record_interval == 0:
                 current_energy = self.model.compute_energy()
                 self.energy_history.append(current_energy)
+                
+                # Track magnetization
+                current_magnetization = self.model.get_spins().sum().item()
+                self.magnetization_history.append(current_magnetization)
         
         final_energy = self.model.compute_energy()
         
@@ -339,8 +348,7 @@ class SpinDynamics:
         if observable == "energy":
             data = np.array(self.energy_history)
         elif observable == "magnetization":
-            # Would need to track magnetization history
-            raise NotImplementedError("Magnetization autocorrelation not implemented")
+            data = np.array(self.magnetization_history)
         else:
             raise ValueError(f"Unknown observable: {observable}")
         
