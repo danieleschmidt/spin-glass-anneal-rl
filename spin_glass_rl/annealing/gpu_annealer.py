@@ -12,6 +12,20 @@ from spin_glass_rl.annealing.temperature_scheduler import TemperatureScheduler, 
 from spin_glass_rl.annealing.result import AnnealingResult
 from spin_glass_rl.annealing.cuda_kernels import CUDAKernelManager, GPUMemoryOptimizer
 
+# Import Generation 3 optimizations
+try:
+    from spin_glass_rl.optimization.adaptive_optimization import (
+        AdaptiveSimulatedAnnealing, AdaptiveConfig, global_cache_manager,
+        global_performance_profiler
+    )
+    from spin_glass_rl.optimization.high_performance_computing import (
+        ComputeConfig, PerformanceOptimizer, BatchProcessor, GPUAccelerator
+    )
+    OPTIMIZATION_FEATURES_AVAILABLE = True
+except ImportError:
+    OPTIMIZATION_FEATURES_AVAILABLE = False
+    print("⚠️  Advanced optimization features not available")
+
 
 @dataclass
 class GPUAnnealerConfig:
@@ -32,6 +46,13 @@ class GPUAnnealerConfig:
     
     # Random seed
     random_seed: Optional[int] = None
+    
+    # Generation 3 optimizations
+    enable_adaptive_optimization: bool = True
+    enable_caching: bool = True
+    enable_performance_profiling: bool = True
+    adaptive_config: Optional['AdaptiveConfig'] = None
+    compute_config: Optional['ComputeConfig'] = None
     
     def __post_init__(self):
         if self.schedule_params is None:

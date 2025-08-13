@@ -62,12 +62,12 @@ class CouplingMatrix:
         if use_sparse:
             self.matrix = torch.sparse_coo_tensor(
                 torch.empty((2, 0), dtype=torch.long),
-                torch.empty(0),
+                torch.empty(0, dtype=torch.float32),
                 (n_spins, n_spins),
                 device=self.device
             )
         else:
-            self.matrix = torch.zeros((n_spins, n_spins), device=self.device)
+            self.matrix = torch.zeros((n_spins, n_spins), device=self.device, dtype=torch.float32)
         
         # Track connectivity statistics
         self.n_couplings = 0
@@ -161,13 +161,13 @@ class CouplingMatrix:
         if self.use_sparse:
             # Generate all possible pairs
             indices = torch.combinations(torch.arange(self.n_spins), 2).t()
-            values = torch.uniform(min_strength, max_strength, (indices.shape[1],))
+            values = torch.rand(indices.shape[1]) * (max_strength - min_strength) + min_strength
             self.set_couplings_batch(indices, values)
         else:
             # Fill upper triangle
             for i in range(self.n_spins):
                 for j in range(i + 1, self.n_spins):
-                    strength = torch.uniform(min_strength, max_strength, (1,)).item()
+                    strength = torch.rand(1).item() * (max_strength - min_strength) + min_strength
                     self.set_coupling(i, j, strength)
     
     def _generate_nearest_neighbor(
@@ -184,7 +184,7 @@ class CouplingMatrix:
             values = []
             for i in range(self.n_spins - 1):
                 indices.append([i, i + 1])
-                values.append(torch.uniform(min_strength, max_strength, (1,)).item())
+                values.append(torch.rand(1).item() * (max_strength - min_strength) + min_strength)
         
         elif topology == "ring":
             # Ring topology (chain with periodic boundary)
@@ -193,7 +193,7 @@ class CouplingMatrix:
             for i in range(self.n_spins):
                 j = (i + 1) % self.n_spins
                 indices.append([i, j])
-                values.append(torch.uniform(min_strength, max_strength, (1,)).item())
+                values.append(torch.rand(1).item() * (max_strength - min_strength) + min_strength)
         
         elif topology == "grid":
             # 2D grid topology
@@ -212,13 +212,13 @@ class CouplingMatrix:
                     if col < grid_size - 1:
                         j = row * grid_size + (col + 1)
                         indices.append([i, j])
-                        values.append(torch.uniform(min_strength, max_strength, (1,)).item())
+                        values.append(torch.rand(1).item() * (max_strength - min_strength) + min_strength)
                     
                     # Bottom neighbor
                     if row < grid_size - 1:
                         j = (row + 1) * grid_size + col
                         indices.append([i, j])
-                        values.append(torch.uniform(min_strength, max_strength, (1,)).item())
+                        values.append(torch.rand(1).item() * (max_strength - min_strength) + min_strength)
         
         if indices:
             indices_tensor = torch.tensor(indices, device=self.device).t()
@@ -241,7 +241,7 @@ class CouplingMatrix:
             for j in range(i + 1, self.n_spins):
                 if torch.rand(1).item() < edge_probability:
                     indices.append([i, j])
-                    values.append(torch.uniform(min_strength, max_strength, (1,)).item())
+                    values.append(torch.rand(1).item() * (max_strength - min_strength) + min_strength)
         
         if indices:
             indices_tensor = torch.tensor(indices, device=self.device).t()
@@ -306,7 +306,11 @@ class CouplingMatrix:
         else:
             row = self.matrix[i]
         
-        return torch.nonzero(row).squeeze().tolist()
+        nonzero_indices = torch.nonzero(row).squeeze()
+        if nonzero_indices.dim() == 0:
+            return [nonzero_indices.item()] if nonzero_indices.numel() > 0 else []
+        else:
+            return nonzero_indices.tolist()
     
     def get_degree(self, i: int) -> int:
         """Get degree (number of neighbors) of spin i."""

@@ -142,7 +142,7 @@ class SpinDynamics:
             return True, delta_energy
         else:
             # Accept with probability exp(-ΔE/kT)
-            acceptance_prob = torch.exp(-delta_energy / self.temperature)
+            acceptance_prob = torch.exp(torch.tensor(-delta_energy / self.temperature)).item()
             if torch.rand(1).item() < acceptance_prob:
                 self.model.flip_spin(site)
                 self.n_accepted += 1
@@ -156,7 +156,7 @@ class SpinDynamics:
         local_field = self.model.get_local_field(site)
         
         # Probability of spin being +1
-        prob_up = 1.0 / (1.0 + torch.exp(-2.0 * local_field / self.temperature))
+        prob_up = 1.0 / (1.0 + torch.exp(torch.tensor(-2.0 * local_field / self.temperature)))
         
         # Set spin based on probability
         new_spin = 1 if torch.rand(1).item() < prob_up else -1
@@ -175,7 +175,7 @@ class SpinDynamics:
         
         # Probability for spin to be +1 in thermal equilibrium
         beta = 1.0 / self.temperature
-        prob_up = 1.0 / (1.0 + torch.exp(-2.0 * beta * local_field))
+        prob_up = 1.0 / (1.0 + torch.exp(torch.tensor(-2.0 * beta * local_field)))
         
         old_spin = self.model.spins[site].item()
         new_spin = 1 if torch.rand(1).item() < prob_up else -1
@@ -203,7 +203,7 @@ class SpinDynamics:
         Returns:
             (True, delta_energy): Cluster flip is always accepted
         """
-        if self.model.is_sparse:
+        if hasattr(self.model, 'config') and self.model.config.use_sparse:
             return self._wolff_cluster_sparse(site)
         else:
             return self._wolff_cluster_dense(site)
@@ -329,6 +329,29 @@ class SpinDynamics:
             return 0.0
         return self.n_accepted / total_attempts
     
+    @property
+    def accepted_flips(self) -> int:
+        """Get number of accepted flips."""
+        return self.n_accepted
+    
+    @accepted_flips.setter
+    def accepted_flips(self, value: int) -> None:
+        """Set number of accepted flips."""
+        self.n_accepted = value
+    
+    @property
+    def total_flips(self) -> int:
+        """Get total number of flip attempts."""
+        return self.n_accepted + self.n_rejected
+    
+    @total_flips.setter
+    def total_flips(self, value: int) -> None:
+        """Set total number of flip attempts."""
+        if value >= self.n_accepted:
+            self.n_rejected = value - self.n_accepted
+        else:
+            raise ValueError("Total flips cannot be less than accepted flips")
+    
     def reset_statistics(self) -> None:
         """Reset dynamics statistics."""
         self.n_accepted = 0
@@ -384,9 +407,15 @@ class SpinDynamics:
         recent_energies = np.array(self.energy_history[-window_size:])
         older_energies = np.array(self.energy_history[-2*window_size:-window_size])
         
-        # Use Welch's t-test to compare means
-        from scipy import stats
-        _, p_value = stats.ttest_ind(recent_energies, older_energies)
+        # Use simple statistical test to compare means
+        try:
+            from scipy import stats
+            _, p_value = stats.ttest_ind(recent_energies, older_energies)
+        except ImportError:
+            # Fallback to simple variance comparison if scipy not available
+            recent_var = np.var(recent_energies)
+            older_var = np.var(older_energies)
+            p_value = 0.05 if abs(recent_var - older_var) < 0.1 else 0.01
         
         # If p-value > 0.05, means are not significantly different
         return p_value > 0.05
