@@ -5,6 +5,33 @@ import numpy as np
 import torch
 from dataclasses import dataclass
 
+# Import robust error handling
+try:
+    from spin_glass_rl.utils.robust_error_handling import (
+        InputValidator, ModelConfigurationError, robust_operation
+    )
+    from spin_glass_rl.utils.comprehensive_monitoring import global_performance_monitor
+    ROBUST_FEATURES_AVAILABLE = True
+except ImportError:
+    ROBUST_FEATURES_AVAILABLE = False
+    
+    # Fallback implementations
+    class InputValidator:
+        @staticmethod
+        def validate_ising_config(config): pass
+        @staticmethod
+        def validate_tensor(tensor, name=""): pass
+        @staticmethod
+        def validate_spins(spins): pass
+        @staticmethod
+        def validate_couplings(couplings, n_spins): pass
+    
+    class ModelConfigurationError(Exception): pass
+    
+    def robust_operation(**kwargs):
+        def decorator(func): return func
+        return decorator
+
 
 @dataclass
 class IsingModelConfig:
@@ -27,12 +54,17 @@ class IsingModel:
     """
     
     def __init__(self, config: IsingModelConfig):
+        # Validate configuration
+        if ROBUST_FEATURES_AVAILABLE:
+            InputValidator.validate_ising_config(config)
+        
         self.config = config
         self.n_spins = config.n_spins
         self.device = torch.device(config.device)
         
         # Initialize spin configuration
-        self.spins = torch.randint(0, 2, (self.n_spins,), device=self.device) * 2 - 1
+        # Initialize spin configuration  
+        self.spins = (torch.randint(0, 2, (self.n_spins,), device=self.device) * 2 - 1).float()
         
         # Initialize coupling matrix
         if config.use_sparse:
@@ -111,6 +143,7 @@ class IsingModel:
         
         return delta_energy
     
+    @robust_operation(component="IsingModel", operation="compute_energy")
     def compute_energy(self) -> float:
         """Compute total energy of current configuration."""
         if self._cache_valid and self._energy_cache is not None:
@@ -140,9 +173,9 @@ class IsingModel:
     def get_local_field(self, i: int) -> float:
         """Get local magnetic field at spin i."""
         if self.config.use_sparse:
-            coupling_field = torch.sparse.mm(
-                self.couplings[i:i+1, :], self.spins.unsqueeze(1)
-            ).item()
+            # Convert row to dense for computation
+            dense_row = self.couplings.to_dense()[i, :]
+            coupling_field = torch.dot(dense_row, self.spins).item()
         else:
             coupling_field = torch.dot(self.couplings[i], self.spins).item()
         
@@ -163,7 +196,7 @@ class IsingModel:
     
     def reset_to_random(self) -> None:
         """Reset to random spin configuration."""
-        self.spins = torch.randint(0, 2, (self.n_spins,), device=self.device) * 2 - 1
+        self.spins = (torch.randint(0, 2, (self.n_spins,), device=self.device) * 2 - 1).float()
         self._invalidate_cache()
     
     def copy(self) -> "IsingModel":
