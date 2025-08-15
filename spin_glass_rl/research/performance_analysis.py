@@ -435,6 +435,10 @@ class ScalingAnalyzer:
                     
                 except Exception as e:
                     print("E", end="", flush=True)  # Error indicator
+                    # Robust error handling - log but continue
+                    global_performance_monitor.record_metric(
+                        "scaling_analysis_error", {"error": str(e), "size": size, "trial": trial}
+                    )
                     continue
             
             # Aggregate trial results

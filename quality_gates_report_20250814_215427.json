@@ -1,0 +1,120 @@
+{
+  "timestamp": "2025-08-14 21:54:27",
+  "summary": {
+    "overall_status": "FAIL",
+    "total_gates": 10,
+    "pass_count": 8,
+    "warning_count": 1,
+    "fail_count": 1,
+    "total_execution_time": 1.57,
+    "pass_rate": 80.0
+  },
+  "detailed_results": [
+    {
+      "gate_name": "Code Execution",
+      "status": "PASS",
+      "message": "All 3 validation tests pass",
+      "details": {
+        "tests_passed": 3,
+        "tests_total": 3
+      },
+      "execution_time": 0.12111854553222656
+    },
+    {
+      "gate_name": "Test Coverage",
+      "status": "WARNING",
+      "message": "Test coverage: 54.2% (below 85% target)",
+      "details": {
+        "coverage_percent": "54.2%",
+        "implementation_files": 48,
+        "test_files": 26
+      },
+      "execution_time": 0.002136707305908203
+    },
+    {
+      "gate_name": "Security Scan",
+      "status": "FAIL",
+      "message": "High severity security issues found",
+      "details": {
+        "scan_output": "_integration/training_pipeline.py:9\n    Import: pickle\n\n  - warning_pattern in spin_glass_rl/utils/performance.py:253\n\n  - dangerous_import in spin_glass_rl/utils/performance.py:7\n    Import: pickle\n\nSummary: 2 high, 7 medium, 0 low severity issues\n\n============================================================\n\ud83d\udcca OVERALL VALIDATION RESULTS:\n  Project Structure: \u2705 PASS\n  Import Structure:  \u274c FAIL\n  Code Quality:      \u26a0\ufe0f  ISSUES\n  Security Scan:     \u26a0\ufe0f  9 ISSUES\n\n\u26a0\ufe0f  Overall Status: NEEDS ATTENTION\n"
+      },
+      "execution_time": 1.3108315467834473
+    },
+    {
+      "gate_name": "Performance Benchmarks",
+      "status": "PASS",
+      "message": "Performance benchmarks met (0.001s total)",
+      "details": {
+        "total_time": "0.001s",
+        "avg_module_load": "0.000s",
+        "modules_tested": 3
+      },
+      "execution_time": 0.0009362697601318359
+    },
+    {
+      "gate_name": "Documentation",
+      "status": "PASS",
+      "message": "Documentation complete and comprehensive",
+      "details": {
+        "required_docs": 5,
+        "docstring_coverage": "100%",
+        "research_modules_documented": "3/3"
+      },
+      "execution_time": 0.0012249946594238281
+    },
+    {
+      "gate_name": "Reproducibility",
+      "status": "PASS",
+      "message": "Results reproducible across multiple runs",
+      "details": {
+        "runs_tested": 2,
+        "consistent_results": true
+      },
+      "execution_time": 0.11536121368408203
+    },
+    {
+      "gate_name": "Statistical Validation",
+      "status": "PASS",
+      "message": "Statistical validation comprehensive (6/6 methods)",
+      "details": {
+        "statistical_methods_found": 6,
+        "statistical_methods_total": 6,
+        "p_value_threshold": "p < 0.05"
+      },
+      "execution_time": 0.0002818107604980469
+    },
+    {
+      "gate_name": "Baseline Comparisons",
+      "status": "PASS",
+      "message": "Baseline comparisons implemented (4 modules)",
+      "details": {
+        "modules_with_baselines": 4
+      },
+      "execution_time": 0.0019025802612304688
+    },
+    {
+      "gate_name": "Code Quality",
+      "status": "PASS",
+      "message": "Code quality high (comments: 6.8%, docstrings: 38.7/file)",
+      "details": {
+        "total_lines": 22928,
+        "comment_ratio": "6.8%",
+        "docstring_density": "38.7/file",
+        "python_files": 58
+      },
+      "execution_time": 0.011139154434204102
+    },
+    {
+      "gate_name": "Research Methodology",
+      "status": "PASS",
+      "message": "Research methodology well documented (2 modules)",
+      "details": {
+        "methodology_modules": [
+          "experimental_validation.py",
+          "performance_analysis.py"
+        ]
+      },
+      "execution_time": 0.0030100345611572266
+    }
+  ]
+}
