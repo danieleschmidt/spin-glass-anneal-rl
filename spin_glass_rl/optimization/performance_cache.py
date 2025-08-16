@@ -6,7 +6,7 @@ import threading
 from typing import Any, Dict, Optional, Tuple, Callable, List
 from dataclasses import dataclass, field
 from collections import OrderedDict, defaultdict
-import pickle
+import json
 import torch
 import numpy as np
 from pathlib import Path
@@ -70,7 +70,7 @@ class LRUCache:
             elif isinstance(obj, np.ndarray):
                 return obj.nbytes
             else:
-                return len(pickle.dumps(obj))
+                return len(json.dumps(obj.__dict__ if hasattr(obj, '__dict__') else str(obj)).encode())
         except Exception:
             return 1024  # Default estimate
     
@@ -304,7 +304,7 @@ class ComputationCache:
         try:
             if cache_file.exists():
                 with open(cache_file, 'rb') as f:
-                    data = pickle.load(f)
+                    data = json.load(f)
                 
                 # Check TTL if specified
                 if self._memory_cache.ttl_seconds is not None:
@@ -330,7 +330,7 @@ class ComputationCache:
         
         try:
             with open(cache_file, 'wb') as f:
-                pickle.dump(value, f)
+                json.dump(self._make_serializable(value), f)
             logger.debug(f"Saved to disk cache: {key}")
             
         except Exception as e:
@@ -383,6 +383,23 @@ class ComputationCache:
             logger.error(f"Computation failed: {func.__name__}", exception=e)
             raise
     
+    def _make_serializable(self, obj):
+        """Convert objects to JSON-serializable format."""
+        if isinstance(obj, dict):
+            return {k: self._make_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._make_serializable(item) for item in obj]
+        elif isinstance(obj, np.ndarray):
+            return {"type": "numpy", "data": obj.tolist(), "shape": obj.shape, "dtype": str(obj.dtype)}
+        elif isinstance(obj, torch.Tensor):
+            return {"type": "tensor", "data": obj.cpu().numpy().tolist(), "shape": list(obj.shape)}
+        elif isinstance(obj, (int, float, str, bool, type(None))):
+            return obj
+        elif hasattr(obj, '__dict__'):
+            return {"type": "object", "data": obj.__dict__, "class": obj.__class__.__name__}
+        else:
+            return {"type": "string", "data": str(obj)}
+
     def invalidate_function(self, func: Callable) -> int:
         """Invalidate all cache entries for a specific function."""
         func_prefix = f"{func.__module__}.{func.__name__}"

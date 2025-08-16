@@ -4,7 +4,6 @@ import time
 import functools
 import threading
 import weakref
-import pickle
 import hashlib
 import json
 from typing import Any, Dict, List, Optional, Callable, Tuple, Union
@@ -249,8 +248,9 @@ class PersistentCache:
                 return None
             
             try:
-                with open(file_path, 'rb') as f:
-                    value = pickle.load(f)
+                with open(file_path, 'r') as f:
+                    data = json.load(f)
+                    value = self._deserialize_value(data)
                 
                 # Update access time
                 self.index[key]['last_access'] = time.time()
@@ -274,9 +274,10 @@ class PersistentCache:
             file_path = self._get_file_path(key)
             
             try:
-                # Serialize value
-                with open(file_path, 'wb') as f:
-                    pickle.dump(value, f)
+                # Serialize value safely
+                serialized_data = self._serialize_value(value)
+                with open(file_path, 'w') as f:
+                    json.dump(serialized_data, f)
                 
                 # Update index
                 file_size = file_path.stat().st_size
@@ -320,6 +321,42 @@ class PersistentCache:
             total_size -= self.index[key]['size']
             del self.index[key]
     
+    def _serialize_value(self, value: Any) -> Dict:
+        """Safely serialize values for JSON storage."""
+        if isinstance(value, (int, float, str, bool, type(None))):
+            return {"type": "primitive", "data": value}
+        elif isinstance(value, list):
+            return {"type": "list", "data": [self._serialize_value(item)["data"] for item in value]}
+        elif isinstance(value, dict):
+            return {"type": "dict", "data": {k: self._serialize_value(v)["data"] for k, v in value.items()}}
+        elif isinstance(value, np.ndarray):
+            return {"type": "numpy", "data": value.tolist(), "shape": value.shape, "dtype": str(value.dtype)}
+        elif hasattr(value, '__dict__'):
+            return {"type": "object", "data": value.__dict__, "class": value.__class__.__name__}
+        else:
+            return {"type": "string", "data": str(value)}
+    
+    def _deserialize_value(self, data: Dict) -> Any:
+        """Safely deserialize values from JSON storage."""
+        value_type = data.get("type", "primitive")
+        value_data = data.get("data")
+        
+        if value_type == "primitive":
+            return value_data
+        elif value_type == "list":
+            return value_data
+        elif value_type == "dict":
+            return value_data
+        elif value_type == "numpy":
+            shape = data.get("shape", [])
+            dtype = data.get("dtype", "float64")
+            array = np.array(value_data, dtype=dtype)
+            return array.reshape(shape) if shape else array
+        elif value_type == "object":
+            return value_data  # Return as dict for safety
+        else:
+            return value_data
+
     def clear(self) -> None:
         """Clear entire cache."""
         with self.lock:
