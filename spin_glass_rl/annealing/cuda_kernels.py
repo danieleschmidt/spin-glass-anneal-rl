@@ -143,12 +143,30 @@ class CUDAKernelManager:
             return
         
         try:
-            # Check for NVCC compiler
+            # Check for NVCC compiler with safe subprocess usage
             import subprocess
-            try:
-                subprocess.check_output(['nvcc', '--version'], stderr=subprocess.STDOUT)
-            except (subprocess.CalledProcessError, FileNotFoundError):
+            import shutil
+            
+            # Use shutil.which for safer executable detection
+            nvcc_path = shutil.which('nvcc')
+            if nvcc_path is None:
                 print("Warning: NVCC compiler not found. CUDA kernels will not be compiled.")
+                print("Falling back to PyTorch operations.")
+                return
+            
+            try:
+                # Safe subprocess call with timeout and explicit arguments
+                result = subprocess.run(
+                    [nvcc_path, '--version'], 
+                    capture_output=True, 
+                    text=True, 
+                    timeout=10,
+                    check=False
+                )
+                if result.returncode != 0:
+                    raise subprocess.CalledProcessError(result.returncode, 'nvcc')
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+                print("Warning: NVCC compiler not available. CUDA kernels will not be compiled.")
                 print("Falling back to PyTorch operations.")
                 return
             

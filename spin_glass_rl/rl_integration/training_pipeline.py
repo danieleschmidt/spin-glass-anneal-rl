@@ -6,7 +6,7 @@ import numpy as np
 from typing import Dict, List, Optional, Any, Tuple, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-import pickle
+import json
 from collections import deque, defaultdict
 
 from spin_glass_rl.core.ising_model import IsingModel
@@ -444,8 +444,10 @@ class RLTrainingPipeline:
             'best_performance': self.best_performance
         }
         
-        with open(path, 'wb') as f:
-            pickle.dump(checkpoint, f)
+        # Convert tensors to lists for JSON serialization
+        serializable_checkpoint = self._make_serializable(checkpoint)
+        with open(path, 'w') as f:
+            json.dump(serializable_checkpoint, f)
         
         logger.info(f"Checkpoint saved: {path}")
     
@@ -461,14 +463,15 @@ class RLTrainingPipeline:
         }
         
         with open(path, 'wb') as f:
-            pickle.dump(model_data, f)
+            json.dump(self._make_serializable(model_data), f)
         
         logger.info(f"Final model saved: {path}")
     
     def load_checkpoint(self, path: Path):
         """Load training checkpoint."""
         with open(path, 'rb') as f:
-            checkpoint = pickle.load(f)
+            checkpoint = json.load(f)
+            checkpoint = self._restore_from_serializable(checkpoint)
         
         self.current_episode = checkpoint['episode']
         self.agent.load_state_dict(checkpoint['agent_state'])
@@ -477,6 +480,32 @@ class RLTrainingPipeline:
         
         logger.info(f"Checkpoint loaded from: {path}")
     
+    def _make_serializable(self, obj):
+        """Convert objects to JSON-serializable format."""
+        if isinstance(obj, dict):
+            return {k: self._make_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._make_serializable(item) for item in obj]
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        elif hasattr(obj, 'state_dict'):  # PyTorch models
+            return {k: v.cpu().numpy().tolist() for k, v in obj.state_dict().items()}
+        elif isinstance(obj, torch.Tensor):
+            return obj.cpu().numpy().tolist()
+        elif isinstance(obj, (int, float, str, bool, type(None))):
+            return obj
+        else:
+            return str(obj)
+    
+    def _restore_from_serializable(self, obj):
+        """Restore objects from JSON-serializable format."""
+        if isinstance(obj, dict):
+            return {k: self._restore_from_serializable(v) for k, v in obj.items()}
+        elif isinstance(obj, list):
+            return [self._restore_from_serializable(item) for item in obj]
+        else:
+            return obj
+
     def get_training_summary(self) -> Dict[str, Any]:
         """Get comprehensive training summary."""
         if not self.training_metrics:
