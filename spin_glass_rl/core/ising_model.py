@@ -88,6 +88,9 @@ class IsingModel:
     
     def set_coupling(self, i: int, j: int, strength: float) -> None:
         """Set coupling strength between spins i and j."""
+        if not (0 <= i < self.n_spins and 0 <= j < self.n_spins):
+            raise ValueError(f"Spin indices out of range: i={i}, j={j}, n_spins={self.n_spins}")
+        
         if self.config.use_sparse:
             # Convert to dense, modify, convert back to sparse
             dense = self.couplings.to_dense()
