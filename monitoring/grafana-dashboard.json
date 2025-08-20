@@ -1,0 +1,39 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "Spin-Glass-RL Performance",
+    "version": 1,
+    "panels": [
+      {
+        "title": "Optimization Requests/sec",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(optimization_requests_total[5m])",
+            "legendFormat": "Requests/sec"
+          }
+        ]
+      },
+      {
+        "title": "Average Response Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "optimization_duration_seconds_sum / optimization_duration_seconds_count",
+            "legendFormat": "Avg Response Time"
+          }
+        ]
+      },
+      {
+        "title": "Energy Improvement Distribution",
+        "type": "histogram",
+        "targets": [
+          {
+            "expr": "optimization_energy_improvement",
+            "legendFormat": "Energy Improvement"
+          }
+        ]
+      }
+    ]
+  }
+}

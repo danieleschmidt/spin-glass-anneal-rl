@@ -1,300 +1,41 @@
-# Docker Compose configuration for Spin-Glass-Anneal-RL
-# Supports development, testing, and production deployment
+version: '3.8'
 
 services:
-  # =============================================================================
-  # Development Service
-  # =============================================================================
-  dev:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development
-    image: spin-glass-rl:dev
-    container_name: spin-glass-rl-dev
-    volumes:
-      # Mount source code for live editing
-      - .:/workspace
-      # Persist Python packages
-      - dev-python-packages:/home/developer/.local
-      # Persist shell history
-      - dev-shell-history:/home/developer
-    environment:
-      - CUDA_VISIBLE_DEVICES=all
-      - PYTHONPATH=/workspace
-      - WANDB_API_KEY=${WANDB_API_KEY:-}
-      - DWAVE_API_TOKEN=${DWAVE_API_TOKEN:-}
+  spin-glass-rl:
+    build: .
     ports:
-      - "8888:8888"  # Jupyter
-      - "6006:6006"  # TensorBoard
-      - "8080:8080"  # Web interface
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    stdin_open: true
-    tty: true
-    command: /bin/bash
-
-  # =============================================================================
-  # Jupyter Service
-  # =============================================================================
-  jupyter:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: jupyter
-    image: spin-glass-rl:jupyter
-    container_name: spin-glass-rl-jupyter
-    volumes:
-      - .:/workspace
-      - jupyter-data:/home/developer/.jupyter
-      - jupyter-cache:/home/developer/.cache
+      - "8080:8080"
     environment:
-      - CUDA_VISIBLE_DEVICES=all
-      - PYTHONPATH=/workspace
-    ports:
-      - "8888:8888"
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
     deploy:
+      replicas: 3
       resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
-  # =============================================================================
-  # Testing Service
-  # =============================================================================
-  test:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: test
-    image: spin-glass-rl:test
-    container_name: spin-glass-rl-test
-    volumes:
-      - .:/workspace
-      - test-cache:/home/developer/.cache
-    environment:
-      - CUDA_VISIBLE_DEVICES=all
-      - PYTHONPATH=/workspace
-      - PYTEST_ARGS=${PYTEST_ARGS:--v --cov=spin_glass_rl}
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-    command: >
-      sh -c "pytest $$PYTEST_ARGS"
-
-  # =============================================================================
-  # Benchmark Service
-  # =============================================================================
-  benchmark:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: benchmark
-    image: spin-glass-rl:benchmark
-    container_name: spin-glass-rl-benchmark
-    volumes:
-      - ./benchmarks:/app/benchmarks
-      - ./benchmark_results:/app/results
-    environment:
-      - CUDA_VISIBLE_DEVICES=all
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
-
-  # =============================================================================
-  # Production Service
-  # =============================================================================
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: production
-    image: spin-glass-rl:prod
-    container_name: spin-glass-rl-app
-    environment:
-      - CUDA_VISIBLE_DEVICES=all
-      - PYTHONPATH=/app
-      - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - WORKERS=${WORKERS:-4}
-    ports:
-      - "80:80"
-      - "8000:8000"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
         limits:
+          cpus: '2.0'
           memory: 8G
-    restart: unless-stopped
+        reservations:
+          cpus: '0.5'
+          memory: 2G
     healthcheck:
-      test: ["CMD", "python", "-c", "import spin_glass_rl; print('OK')"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-  # =============================================================================
-  # Documentation Service
-  # =============================================================================
-  docs:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: docs-server
-    image: spin-glass-rl:docs
-    container_name: spin-glass-rl-docs
-    ports:
-      - "8080:80"
-    restart: unless-stopped
-
-  # =============================================================================
-  # Database Service (for experiment tracking)
-  # =============================================================================
-  postgres:
-    image: postgres:15-alpine
-    container_name: spin-glass-rl-db
-    environment:
-      - POSTGRES_DB=${POSTGRES_DB:-spin_glass_rl}
-      - POSTGRES_USER=${POSTGRES_USER:-sgrl_user}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-sgrl_password}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    restart: unless-stopped
-
-  # =============================================================================
-  # Redis Service (for caching and job queues)
-  # =============================================================================
-  redis:
-    image: redis:7-alpine
-    container_name: spin-glass-rl-redis
-    volumes:
-      - redis-data:/data
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-
-  # =============================================================================
-  # Monitoring Services
-  # =============================================================================
-  
-  # TensorBoard
-  tensorboard:
-    image: tensorflow/tensorflow:latest
-    container_name: spin-glass-rl-tensorboard
-    volumes:
-      - ./logs/tensorboard:/logs
-    ports:
-      - "6006:6006"
-    command: tensorboard --logdir=/logs --host=0.0.0.0 --port=6006
-    restart: unless-stopped
-
-  # MLflow
-  mlflow:
-    image: python:3.11-slim
-    container_name: spin-glass-rl-mlflow
-    volumes:
-      - mlflow-data:/mlflow
-    ports:
-      - "5000:5000"
-    environment:
-      - MLFLOW_BACKEND_STORE_URI=sqlite:///mlflow/mlflow.db
-      - MLFLOW_DEFAULT_ARTIFACT_ROOT=/mlflow/artifacts
-    command: >
-      sh -c "pip install mlflow psycopg2-binary &&
-             mlflow server --host 0.0.0.0 --port 5000 
-             --backend-store-uri sqlite:///mlflow/mlflow.db 
-             --default-artifact-root /mlflow/artifacts"
-    restart: unless-stopped
-
-  # Prometheus (metrics collection)
   prometheus:
     image: prom/prometheus:latest
-    container_name: spin-glass-rl-prometheus
-    volumes:
-      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
     ports:
       - "9090:9090"
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--web.enable-lifecycle'
-    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
 
-  # Grafana (metrics visualization)
   grafana:
     image: grafana/grafana:latest
-    container_name: spin-glass-rl-grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
-      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
     ports:
       - "3000:3000"
-    restart: unless-stopped
-
-# =============================================================================
-# Networks
-# =============================================================================
-networks:
-  default:
-    name: spin-glass-rl-network
-
-# =============================================================================
-# Volumes
-# =============================================================================
-volumes:
-  # Development volumes
-  dev-python-packages:
-    name: spin-glass-rl-dev-packages
-  dev-shell-history:
-    name: spin-glass-rl-dev-history
-  
-  # Jupyter volumes
-  jupyter-data:
-    name: spin-glass-rl-jupyter-data
-  jupyter-cache:
-    name: spin-glass-rl-jupyter-cache
-  
-  # Test volumes
-  test-cache:
-    name: spin-glass-rl-test-cache
-  
-  # Database volumes
-  postgres-data:
-    name: spin-glass-rl-postgres
-  redis-data:
-    name: spin-glass-rl-redis
-  
-  # Monitoring volumes
-  mlflow-data:
-    name: spin-glass-rl-mlflow
-  prometheus-data:
-    name: spin-glass-rl-prometheus
-  grafana-data:
-    name: spin-glass-rl-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+    volumes:
+      - ./monitoring/grafana:/var/lib/grafana
