@@ -26,18 +26,18 @@ from dataclasses import dataclass, field
 from abc import ABC, abstractmethod
 from enum import Enum
 import threading
-import logging
 from collections import defaultdict, deque
 import traceback
 import sys
 import os
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Simple logging setup
+class SimpleLogger:
+    def info(self, msg): print(f"INFO: {msg}")
+    def error(self, msg): print(f"ERROR: {msg}")
+    def warning(self, msg): print(f"WARNING: {msg}")
+
+logger = SimpleLogger()
 
 
 class ValidationLevel(Enum):

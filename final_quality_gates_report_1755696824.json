@@ -1,0 +1,95 @@
+{
+  "timestamp": 1755696824.0547404,
+  "overall_status": "FAIL",
+  "production_ready": false,
+  "quality_gates": {
+    "total": 6,
+    "passed": 4,
+    "warnings": 1,
+    "failed": 1,
+    "pass_rate": 66.66666666666666
+  },
+  "detailed_results": [
+    {
+      "status": "PASS",
+      "message": "All core functionality executes successfully",
+      "details": {
+        "problems_tested": 3,
+        "minimal_demo_passed": true
+      },
+      "gate_name": "Code Execution",
+      "execution_time": 0.17560291290283203
+    },
+    {
+      "status": "WARNING",
+      "message": "Test coverage below target: 17.2% < 85%",
+      "details": {
+        "coverage_percent": 17.1875,
+        "implementation_files": 64,
+        "test_files": 11
+      },
+      "gate_name": "Test Coverage",
+      "execution_time": 0.0007429122924804688
+    },
+    {
+      "status": "FAIL",
+      "message": "39 security issues found (too many)",
+      "details": {
+        "issues_count": 39
+      },
+      "gate_name": "Security Scan",
+      "execution_time": 0.011456966400146484
+    },
+    {
+      "status": "PASS",
+      "message": "Performance benchmark met: 0.474s <= 5.0s",
+      "details": {
+        "benchmark_time_seconds": 0.4739089012145996,
+        "target_time_seconds": 5.0,
+        "problem_size": 20,
+        "sweeps": 500,
+        "final_energy": 0.0
+      },
+      "gate_name": "Performance Benchmarks",
+      "execution_time": 0.47394609451293945
+    },
+    {
+      "status": "PASS",
+      "message": "Documentation complete (100.0% docstring coverage)",
+      "details": {
+        "missing_docs": [],
+        "docstring_coverage": 100.0,
+        "python_files_checked": 64
+      },
+      "gate_name": "Documentation",
+      "execution_time": 0.004080533981323242
+    },
+    {
+      "status": "PASS",
+      "message": "Results reproducible (max variation: 0.000000)",
+      "details": {
+        "results": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "std_deviation": 0.0,
+        "max_variation": 0.0,
+        "runs_tested": 3
+      },
+      "gate_name": "Reproducibility",
+      "execution_time": 0.21737289428710938
+    }
+  ],
+  "recommendations": [
+    "\ud83d\udfe1 IMPROVE: Test Coverage - Test coverage below target: 17.2% < 85%",
+    "\ud83d\udd34 CRITICAL: Fix Security Scan - 39 security issues found (too many)"
+  ],
+  "next_steps": [
+    "\ud83d\udd34 CRITICAL: Must fix failures before production",
+    "\ud83d\udee0\ufe0f Address all failed quality gates",
+    "\ud83d\udd04 Re-run complete quality gate suite",
+    "\u23f3 Do not proceed to deployment until all gates pass"
+  ],
+  "execution_time_seconds": 0.883291482925415
+}
