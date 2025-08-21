@@ -1,0 +1,163 @@
+{
+  "version": "1.0.0",
+  "created_at": "2025-08-21 22:28:58 UTC",
+  "regions": [
+    {
+      "region": "us-east-1",
+      "primary_language": "en",
+      "supported_languages": [
+        "en",
+        "es"
+      ],
+      "compliance_standards": [
+        "ccpa"
+      ],
+      "data_residency_required": false,
+      "encryption_required": true,
+      "audit_logging_required": true,
+      "latency_sla_ms": 100,
+      "availability_sla": 0.999
+    },
+    {
+      "region": "ca-central-1",
+      "primary_language": "en",
+      "supported_languages": [
+        "en",
+        "fr"
+      ],
+      "compliance_standards": [
+        "pipeda"
+      ],
+      "data_residency_required": true,
+      "encryption_required": true,
+      "audit_logging_required": true,
+      "latency_sla_ms": 150,
+      "availability_sla": 0.999
+    },
+    {
+      "region": "eu-west-1",
+      "primary_language": "en",
+      "supported_languages": [
+        "en",
+        "fr",
+        "de",
+        "es",
+        "it"
+      ],
+      "compliance_standards": [
+        "gdpr"
+      ],
+      "data_residency_required": true,
+      "encryption_required": true,
+      "audit_logging_required": true,
+      "latency_sla_ms": 200,
+      "availability_sla": 0.999
+    },
+    {
+      "region": "eu-central-1",
+      "primary_language": "de",
+      "supported_languages": [
+        "de",
+        "en"
+      ],
+      "compliance_standards": [
+        "gdpr"
+      ],
+      "data_residency_required": true,
+      "encryption_required": true,
+      "audit_logging_required": true,
+      "latency_sla_ms": 150,
+      "availability_sla": 0.999
+    },
+    {
+      "region": "ap-southeast-1",
+      "primary_language": "en",
+      "supported_languages": [
+        "en",
+        "zh",
+        "ja",
+        "ko"
+      ],
+      "compliance_standards": [
+        "pdpa"
+      ],
+      "data_residency_required": true,
+      "encryption_required": true,
+      "audit_logging_required": true,
+      "latency_sla_ms": 250,
+      "availability_sla": 0.999
+    },
+    {
+      "region": "ap-northeast-1",
+      "primary_language": "ja",
+      "supported_languages": [
+        "ja",
+        "en"
+      ],
+      "compliance_standards": [
+        "pdpa"
+      ],
+      "data_residency_required": false,
+      "encryption_required": true,
+      "audit_logging_required": true,
+      "latency_sla_ms": 200,
+      "availability_sla": 0.999
+    },
+    {
+      "region": "sa-east-1",
+      "primary_language": "pt",
+      "supported_languages": [
+        "pt",
+        "es",
+        "en"
+      ],
+      "compliance_standards": [
+        "lgpd"
+      ],
+      "data_residency_required": true,
+      "encryption_required": true,
+      "audit_logging_required": true,
+      "latency_sla_ms": 300,
+      "availability_sla": 0.999
+    }
+  ],
+  "supported_platforms": [
+    "linux-x86_64",
+    "linux-arm64",
+    "docker",
+    "kubernetes",
+    "macos-x86_64",
+    "windows-x86_64"
+  ],
+  "feature_flags": {
+    "meta_learning": true,
+    "quantum_simulation": true,
+    "gpu_acceleration": true,
+    "federated_learning": true,
+    "edge_computing": true
+  },
+  "global_config": {
+    "default_language": "pt",
+    "supported_languages": [
+      "en",
+      "es",
+      "fr",
+      "de",
+      "ja",
+      "zh",
+      "pt",
+      "ru",
+      "ko",
+      "it"
+    ],
+    "compliance_standards": [
+      "lgpd",
+      "pdpa",
+      "gdpr",
+      "ccpa",
+      "pipeda"
+    ],
+    "encryption_required": true,
+    "audit_logging_required": true
+  }
+}
