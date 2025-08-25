@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: progressive-quality-gates-staging
+  labels:
+    app: progressive-quality-gates
+    environment: staging

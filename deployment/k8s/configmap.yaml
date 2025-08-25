@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pqg-config
+  namespace: progressive-quality-gates-staging
+data:
+  config.yaml: |
+    environment: staging
+    cache:
+      enabled: true
+      ttl: 300
+    ml_prediction:
+      enabled: true
+      model_path: /app/models
+    distributed_execution:
+      enabled: true
+      max_workers: 8
+    monitoring:
+      enabled: true
+      port: 9090
