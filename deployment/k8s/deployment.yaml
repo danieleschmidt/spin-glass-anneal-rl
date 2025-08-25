@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: progressive-quality-gates
+  namespace: progressive-quality-gates-staging
+  labels:
+    app: progressive-quality-gates
+    version: v1.0.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: progressive-quality-gates
+  template:
+    metadata:
+      labels:
+        app: progressive-quality-gates
+        version: v1.0.0
+    spec:
+      containers:
+      - name: pqg
+        image: progressive-quality-gates:latest
+        ports:
+        - containerPort: 8080
+          name: health
+        - containerPort: 9090
+          name: metrics
+        env:
+        - name: ENVIRONMENT
+          value: staging
+        - name: CONFIG_PATH
+          value: /app/config/config.yaml
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        - name: cache
+          mountPath: /app/cache
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 2Gi
+          requests:
+            cpu: 250m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: config
+        configMap:
+          name: pqg-config
+      - name: cache
+        emptyDir: {}

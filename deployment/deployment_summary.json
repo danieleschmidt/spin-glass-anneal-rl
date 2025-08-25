@@ -1,0 +1,28 @@
+{
+  "environment": "staging",
+  "timestamp": 1756093852.8456829,
+  "status": "in_progress",
+  "components": {
+    "docker": {
+      "dockerfile": "deployment/docker/Dockerfile"
+    },
+    "kubernetes": {
+      "manifests": [
+        "deployment/k8s/namespace.yaml",
+        "deployment/k8s/configmap.yaml",
+        "deployment/k8s/deployment.yaml",
+        "deployment/k8s/service.yaml",
+        "deployment/k8s/hpa.yaml"
+      ],
+      "namespace": "progressive-quality-gates-staging"
+    },
+    "scripts": [
+      "deployment/scripts/build.sh",
+      "deployment/scripts/deploy.sh",
+      "deployment/scripts/health-check.sh"
+    ],
+    "documentation": [
+      "deployment/README.md"
+    ]
+  }
+}

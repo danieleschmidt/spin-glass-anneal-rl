@@ -1,0 +1,86 @@
+{
+  "timestamp": 1756093625.399725,
+  "stage": "development",
+  "risk_level": "medium",
+  "overall_score": 27.0,
+  "metric_scores": {
+    "test_coverage": 35.0,
+    "security_score": 70.0,
+    "performance_score": 30.0,
+    "code_quality_score": 0.0,
+    "documentation_score": 0.0
+  },
+  "passed": false,
+  "checks_executed": 4,
+  "checks_passed": 2,
+  "checks_failed": 2,
+  "execution_time": 0.01830887794494629,
+  "recommendations": [
+    "Fix failing required checks: integration_tests, performance_test",
+    "Improve test_coverage: current 35.0, target 70.0",
+    "Improve security_score: current 70.0, target 80.0",
+    "Improve performance_score: current 30.0, target 75.0",
+    "Improve code_quality_score: current 0.0, target 75.0"
+  ],
+  "next_stage_requirements": [
+    "test_coverage >= 80.0",
+    "security_score >= 85.0",
+    "performance_score >= 80.0",
+    "code_quality_score >= 80.0",
+    "documentation_score >= 70.0",
+    "reliability_score >= 80.0",
+    "Implement e2e_tests",
+    "Implement load_test"
+  ],
+  "details": {
+    "check_results": {
+      "unit_tests": {
+        "passed": true,
+        "score": 50.0,
+        "details": {
+          "error": "[Errno 2] No such file or directory: 'python'",
+          "test_files": 11
+        },
+        "required": true
+      },
+      "integration_tests": {
+        "passed": false,
+        "score": 20.0,
+        "details": {
+          "error": "[Errno 2] No such file or directory: 'python'"
+        },
+        "required": true
+      },
+      "security_scan": {
+        "passed": true,
+        "score": 70.0,
+        "details": {
+          "error": "[Errno 2] No such file or directory: 'python'",
+          "fallback": true
+        },
+        "required": true
+      },
+      "performance_test": {
+        "passed": false,
+        "score": 30.0,
+        "details": {
+          "error": "'MinimalAnnealer' object has no attribute 'optimize'"
+        },
+        "required": true
+      }
+    },
+    "failure_rate": 0.5,
+    "failure_tolerance": 0.05,
+    "threshold_config": {
+      "stage": "development",
+      "risk_level": "medium",
+      "thresholds": {
+        "test_coverage": 70.0,
+        "security_score": 80.0,
+        "performance_score": 75.0,
+        "code_quality_score": 75.0,
+        "documentation_score": 60.0
+      }
+    }
+  }
+}
