@@ -1,0 +1,174 @@
+{
+  "timestamp": 1756210814.9347456,
+  "quality_level": "research_grade",
+  "overall_score": 58.41654448822505,
+  "max_possible_score": 100,
+  "pass_rate": 60.0,
+  "summary": {
+    "total_gates": 5,
+    "passed_gates": 3,
+    "failed_gates": 2,
+    "error_gates": 0,
+    "total_execution_time": 0.09583044052124023,
+    "quality_level_met": false
+  },
+  "recommendations": [
+    "Increase test coverage and fix failing tests",
+    "Optimize performance bottlenecks and improve throughput"
+  ],
+  "gates": [
+    {
+      "gate_name": "unit_tests",
+      "result": "fail",
+      "score": 57.14285714285714,
+      "max_score": 100,
+      "execution_time": 0.012467145919799805,
+      "errors": [],
+      "warnings": [],
+      "details": {
+        "minimal_ising": {
+          "passed": 0,
+          "total": 3,
+          "error": "'MinimalAnnealer' object has no attribute 'optimize'"
+        },
+        "research_modules": {
+          "passed": 4,
+          "total": 4,
+          "coverage": 100.0
+        }
+      }
+    },
+    {
+      "gate_name": "security_scan",
+      "result": "pass",
+      "score": 60.0,
+      "max_score": 100,
+      "execution_time": 0.011158227920532227,
+      "errors": [],
+      "warnings": [
+        "code_injection: Potential code injection patterns found",
+        "dos_protection: Limited DoS protection"
+      ],
+      "details": {
+        "input_validation": {
+          "status": "pass",
+          "message": "Input validation framework present"
+        },
+        "code_injection": {
+          "status": "warning",
+          "message": "Potential code injection patterns found",
+          "details": [
+            "spin_glass_rl/research/meta_learning_optimization.py: eval("
+          ]
+        },
+        "path_traversal": {
+          "status": "pass",
+          "message": "No obvious path traversal vulnerabilities detected"
+        },
+        "dos_protection": {
+          "status": "warning",
+          "message": "Limited DoS protection"
+        },
+        "dependency_vulnerabilities": {
+          "status": "pass",
+          "message": "Dependency files present: ['requirements.txt', 'requirements-dev.txt', 'pyproject.toml']",
+          "recommendation": "Run 'pip audit' to check for vulnerabilities"
+        }
+      }
+    },
+    {
+      "gate_name": "performance_benchmark",
+      "result": "fail",
+      "score": 0.0,
+      "max_score": 100,
+      "execution_time": 0.00026297569274902344,
+      "errors": [],
+      "warnings": [],
+      "details": {
+        "basic_optimization": {
+          "status": "error",
+          "message": "'MinimalAnnealer' object has no attribute 'optimize'"
+        },
+        "memory_usage": {
+          "status": "error",
+          "message": "No module named 'psutil'"
+        },
+        "throughput": {
+          "status": "error",
+          "message": "'MinimalAnnealer' object has no attribute 'optimize'"
+        }
+      }
+    },
+    {
+      "gate_name": "code_quality",
+      "result": "pass",
+      "score": 86.18986529826812,
+      "max_score": 100,
+      "execution_time": 0.041428565979003906,
+      "errors": [],
+      "warnings": [],
+      "details": {
+        "complexity": {
+          "status": "warning",
+          "score": 60,
+          "total_files": 86,
+          "total_lines": 43652,
+          "avg_lines_per_file": 507.5813953488372
+        },
+        "documentation": {
+          "status": "pass",
+          "score": 85,
+          "documentation_files": 25,
+          "docstring_coverage": 100.0,
+          "python_files_total": 86
+        },
+        "code_style": {
+          "status": "pass",
+          "score": 99.75946119307248,
+          "style_issues": 105,
+          "total_checks": 43652
+        },
+        "maintainability": {
+          "status": "pass",
+          "score": 100.0,
+          "files_with_good_practices": 86,
+          "total_files": 86
+        }
+      }
+    },
+    {
+      "gate_name": "research_validation",
+      "result": "pass",
+      "score": 88.75,
+      "max_score": 100,
+      "execution_time": 0.030307292938232422,
+      "errors": [],
+      "warnings": [],
+      "details": {
+        "novelty": {
+          "status": "pass",
+          "score": 90,
+          "message": "Found 4 novel research modules",
+          "modules_found": 4,
+          "modules_expected": 4
+        },
+        "reproducibility": {
+          "status": "pass",
+          "score": 100.0,
+          "reproducibility_indicators": 12,
+          "total_files": 12
+        },
+        "experimental_validation": {
+          "status": "pass",
+          "score": 85,
+          "experimental_indicators": 13
+        },
+        "statistical_significance": {
+          "status": "pass",
+          "score": 80,
+          "statistical_indicators": 20
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+[
+  {
+    "algorithm_name": "AQIA",
+    "problem_size": 50,
+    "energy": -7.413991331752164,
+    "runtime": 0.17143710454305014,
+    "convergence_steps": 1000,
+    "statistical_significance": 1.0,
+    "reproducibility_score": 1.0,
+    "baseline_improvement": 0.0,
+    "experiment_timestamp": "2025-08-26T12:08:59.563684"
+  },
+  {
+    "algorithm_name": "MSHO",
+    "problem_size": 50,
+    "energy": -8.19609799558124,
+    "runtime": 0.0023031234741210938,
+    "convergence_steps": 200,
+    "statistical_significance": 1.0,
+    "reproducibility_score": 1.0,
+    "baseline_improvement": 0.0,
+    "experiment_timestamp": "2025-08-26T12:08:59.576497"
+  },
+  {
+    "algorithm_name": "Baseline_SA",
+    "problem_size": 50,
+    "energy": -11.448974970794817,
+    "runtime": 0.16567571957906088,
+    "convergence_steps": 1000,
+    "statistical_significance": 1.0,
+    "reproducibility_score": 0.9999999999999998,
+    "baseline_improvement": 0.0,
+    "experiment_timestamp": "2025-08-26T12:09:00.079558"
+  },
+  {
+    "algorithm_name": "AQIA",
+    "problem_size": 100,
+    "energy": -14.848717627334572,
+    "runtime": 0.6369046370188395,
+    "convergence_steps": 1000,
+    "statistical_significance": 1.0,
+    "reproducibility_score": 1.0,
+    "baseline_improvement": 0.0,
+    "experiment_timestamp": "2025-08-26T12:09:02.013479"
+  },
+  {
+    "algorithm_name": "MSHO",
+    "problem_size": 100,
+    "energy": -13.678309301133886,
+    "runtime": 0.008244991302490234,
+    "convergence_steps": 200,
+    "statistical_significance": 1.0,
+    "reproducibility_score": 1.0,
+    "baseline_improvement": 0.0,
+    "experiment_timestamp": "2025-08-26T12:09:02.060657"
+  },
+  {
+    "algorithm_name": "Baseline_SA",
+    "problem_size": 100,
+    "energy": -26.082874799563836,
+    "runtime": 0.6326539516448975,
+    "convergence_steps": 1000,
+    "statistical_significance": 1.0,
+    "reproducibility_score": 1.0,
+    "baseline_improvement": 0.0,
+    "experiment_timestamp": "2025-08-26T12:09:03.981101"
+  },
+  {
+    "algorithm_name": "AQIA",
+    "problem_size": 150,
+    "energy": -22.30619529959473,
+    "runtime": 1.4222160975138347,
+    "convergence_steps": 1000,
+    "statistical_significance": 1.0,
+    "reproducibility_score": 1.0,
+    "baseline_improvement": 0.0,
+    "experiment_timestamp": "2025-08-26T12:09:08.307990"
+  },
+  {
+    "algorithm_name": "MSHO",
+    "problem_size": 150,
+    "energy": -7.769755024306684,
+    "runtime": 0.01571798324584961,
+    "convergence_steps": 200,
+    "statistical_significance": 1.0,
+    "reproducibility_score": 1.0,
+    "baseline_improvement": 0.0,
+    "experiment_timestamp": "2025-08-26T12:09:08.405650"
+  },
+  {
+    "algorithm_name": "Baseline_SA",
+    "problem_size": 150,
+    "energy": -39.7528651066081,
+    "runtime": 1.3978957335154216,
+    "convergence_steps": 1000,
+    "statistical_significance": 1.0,
+    "reproducibility_score": 1.0,
+    "baseline_improvement": 0.0,
+    "experiment_timestamp": "2025-08-26T12:09:12.650705"
+  }
+]
